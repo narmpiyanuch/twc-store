@@ -1075,11 +1075,6 @@ export default function Dashboard() {
                   <Plus size={18} /> เพิ่มสต็อก
                 </button>
               </section>
-              <SummaryCards
-                bottleTotal={bottleTotal}
-                capTotal={capTotal}
-                oemTotal={oemTotal}
-              />
               <div className="inventory-main-column">
                 <section className="panel inventory-section">
                   <div className="section-heading">
