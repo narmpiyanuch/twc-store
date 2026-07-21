@@ -42,9 +42,9 @@ import { supabase } from "@/lib/supabase";
 const navItems = [
   { label: "ภาพรวม", icon: Home },
   { label: "สต็อก", icon: Boxes },
+  { label: "Supplier", icon: Factory },
   { label: "ลูกค้า OEM", icon: Users },
   { label: "ราคา OEM", icon: Calculator },
-  { label: "Supplier", icon: Factory },
 ];
 const supplierBottleSizes = [350, 500, 600, 780, 1500];
 const digitsOnly = (value: string) => value.replace(/\D/g, "");
@@ -1631,7 +1631,7 @@ export default function Dashboard() {
           </button>
         ))}
         <button
-          className={active === "ราคา OEM" || active === "Supplier" ? "active" : ""}
+          className={navItems.slice(3).some((item) => item.label === active) ? "active" : ""}
           onClick={() => setShowMobileMore(true)}
           aria-haspopup="dialog"
           aria-expanded={showMobileMore}
