@@ -60,9 +60,6 @@ function OemList({ items, onRemove }: { items: OemRecord[]; onRemove: (id: strin
 export default function Dashboard() {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
-  const [authEmail, setAuthEmail] = useState("");
-  const [authPassword, setAuthPassword] = useState("");
   const [authMessage, setAuthMessage] = useState("");
   const [active, setActive] = useState("ภาพรวม");
   const [brandTab, setBrandTab] = useState("เนบิวลา");
@@ -219,34 +216,28 @@ export default function Dashboard() {
     await Promise.all([deleteRecord("suppliers", supplier.id), saveRecord("supplierLogs", log)]);
   };
 
-  const submitAuth = async (event: FormEvent) => {
-    event.preventDefault();
+  const enterApp = async () => {
     setAuthLoading(true);
     setAuthMessage("");
-    const result = authMode === "signin"
-      ? await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword })
-      : await supabase.auth.signUp({ email: authEmail, password: authPassword });
+    const result = await supabase.auth.signInAnonymously();
     setAuthLoading(false);
-    if (result.error) setAuthMessage(result.error.message);
-    else if (authMode === "signup" && !result.data.session) setAuthMessage("สมัครสำเร็จ กรุณายืนยันอีเมลก่อนเข้าสู่ระบบ");
+    if (result.error) setAuthMessage("ไม่สามารถเชื่อมต่อระบบได้ กรุณาลองใหม่อีกครั้ง");
   };
 
   const goTo = (label: string) => setActive(label);
   const toggleFactory = (factoryId: string) => setExpandedFactories(items => items.includes(factoryId) ? items.filter(item => item !== factoryId) : [...items, factoryId]);
 
-  if (authLoading && !session) return <main className="auth-page"><div className="auth-loading">กำลังเชื่อมต่อฐานข้อมูล...</div></main>;
   if (!session) return <main className="auth-page"><section className="auth-card">
     <Image className="auth-logo" src="/insight-taweechai-logo.jpg" alt="Taweechai Drinking Water" width={180} height={100} priority />
-    <p className="eyebrow">Insight Taweechai</p><h1>{authMode === "signin" ? "เข้าสู่ระบบ" : "สร้างบัญชีผู้ใช้งาน"}</h1><p className="auth-intro">ข้อมูลสต็อกจะบันทึกบน Cloud และใช้งานร่วมกันได้ทุกอุปกรณ์</p>
-    <form onSubmit={submitAuth}><label>อีเมล<input type="email" inputMode="email" autoComplete="email" required value={authEmail} onChange={event => setAuthEmail(event.target.value)} placeholder="name@example.com" /></label><label>รหัสผ่าน<input type="password" minLength={6} autoComplete={authMode === "signin" ? "current-password" : "new-password"} required value={authPassword} onChange={event => setAuthPassword(event.target.value)} placeholder="อย่างน้อย 6 ตัวอักษร" /></label>{authMessage && <p className="auth-message">{authMessage}</p>}<button className="save-btn" type="submit" disabled={authLoading}>{authLoading ? "กำลังดำเนินการ..." : authMode === "signin" ? "เข้าสู่ระบบ" : "สมัครสมาชิก"}</button></form>
-    <button className="auth-switch" onClick={() => { setAuthMode(mode => mode === "signin" ? "signup" : "signin"); setAuthMessage(""); }}>{authMode === "signin" ? "ยังไม่มีบัญชี? สมัครสมาชิก" : "มีบัญชีแล้ว? เข้าสู่ระบบ"}</button>
+    <button className="auth-enter-button" type="button" onClick={enterApp} disabled={authLoading}>{authLoading && <span className="auth-spinner" aria-hidden="true" />}<span>{authLoading ? "Loading..." : "Insight Taweechai"}</span></button>
+    {authMessage && <p className="auth-message" role="alert">{authMessage}</p>}
   </section></main>;
 
   return <div className="app-shell">
     <aside className="sidebar">
       <div className="brand"><Image className="brand-logo" src="/insight-taweechai-logo.jpg" alt="โลโก้ทวีชัยน้ำดื่ม" width={42} height={42} priority /><div><strong>Insight Taweechai</strong><small>Stock management</small></div></div>
       <nav className="side-nav" aria-label="เมนูหลัก"><p className="nav-caption">เมนูหลัก</p>{navItems.map(({ label, icon: Icon }) => <button key={label} className={active === label ? "active" : ""} onClick={() => goTo(label)}><Icon size={20} /><span>{label}</span></button>)}</nav>
-      <div className="database-status"><Database size={16} /><div><strong>{databaseReady ? "ฐานข้อมูล Cloud พร้อมใช้งาน" : "กำลังเชื่อมต่อฐานข้อมูล"}</strong><small>{session.user.email}</small></div><button className="logout-button" onClick={() => supabase.auth.signOut()} aria-label="ออกจากระบบ"><LogOut size={16} /></button></div>
+      <div className="database-status"><Database size={16} /><div><strong>{databaseReady ? "ฐานข้อมูล Cloud พร้อมใช้งาน" : "กำลังเชื่อมต่อฐานข้อมูล"}</strong><small>Insight Taweechai</small></div><button className="logout-button" onClick={() => supabase.auth.signOut()} aria-label="ออกจากระบบ"><LogOut size={16} /></button></div>
     </aside>
     <main className="main">
       <div className="content inventory-page">
