@@ -155,31 +155,34 @@ const initialOem: OemRecord[] = [
 function StockCard({
   item,
   onOpen,
+  onDelete,
 }: {
   item: InventoryRecord;
   onOpen: () => void;
+  onDelete: () => void;
 }) {
   return (
-    <button className="inventory-card inventory-card-button" onClick={onOpen}>
-      <div className="inventory-icon">
-        {item.color ? (
-          <span className="color-swatch" style={{ background: item.color }} />
-        ) : (
-          <Package size={21} />
-        )}
-      </div>
-      <div className="inventory-copy">
-        <strong>{item.name}</strong>
-        <small>
-          {item.detail} · {item.id}
-        </small>
-      </div>
-      <div className="inventory-amount">
-        <strong>{item.quantity.toLocaleString("th-TH")}</strong>
-        <span>{item.unit}</span>
-      </div>
-      <ChevronRight className="card-chevron" size={18} />
-    </button>
+    <article className="inventory-card-shell">
+      <button className="inventory-card inventory-card-button" onClick={onOpen}>
+        <div className="inventory-icon">
+          {item.color ? (
+            <span className="color-swatch" style={{ background: item.color }} />
+          ) : (
+            <Package size={21} />
+          )}
+        </div>
+        <div className="inventory-copy">
+          <strong>{item.name}</strong>
+          <small>{item.detail} · {item.id}</small>
+        </div>
+        <div className="inventory-amount">
+          <strong>{item.quantity.toLocaleString("th-TH")}</strong>
+          <span>{item.unit}</span>
+        </div>
+        <ChevronRight className="card-chevron" size={18} />
+      </button>
+      <button type="button" className="stock-delete-button" onClick={onDelete} aria-label={`ลบ ${item.name}`}><Trash2 size={16} /></button>
+    </article>
   );
 }
 
@@ -316,6 +319,8 @@ export default function Dashboard() {
     useState<SupplierRecord | null>(null);
   const [factoryToDelete, setFactoryToDelete] =
     useState<SupplierFactory | null>(null);
+  const [stockToDelete, setStockToDelete] =
+    useState<InventoryRecord | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -364,9 +369,9 @@ export default function Dashboard() {
         });
         setInventory(migrated);
         await saveMany("inventory", migrated);
-      } else await saveMany("inventory", initialInventory);
+      } else setInventory([]);
       if (storedOem.length) setOemItems(storedOem);
-      else await saveMany("oem", initialOem);
+      else setOemItems([]);
       const factories = [...storedFactories];
       const migratedSuppliers = storedSuppliers.map((item) => {
         const legacy = item as SupplierRecord & {
@@ -466,6 +471,13 @@ export default function Dashboard() {
     );
     await saveRecord("inventory", updated);
     setSelectedStock(null);
+  };
+
+  const removeStock = async (item: InventoryRecord) => {
+    if (stockToDelete?.id !== item.id) { setStockToDelete(item); return; }
+    setInventory((items) => items.filter((entry) => entry.id !== item.id));
+    await deleteRecord("inventory", item.id);
+    setStockToDelete(null);
   };
 
   const addStock = async (event: FormEvent) => {
@@ -942,6 +954,7 @@ export default function Dashboard() {
                           key={item.id}
                           item={item}
                           onOpen={() => openStock(item)}
+                          onDelete={() => setStockToDelete(item)}
                         />
                       ))}
                   </div>
@@ -968,6 +981,7 @@ export default function Dashboard() {
                         key={item.id}
                         item={item}
                         onOpen={() => openStock(item)}
+                        onDelete={() => setStockToDelete(item)}
                       />
                     ))}
                   </div>
@@ -998,6 +1012,7 @@ export default function Dashboard() {
                         key={item.id}
                         item={item}
                         onOpen={() => openStock(item)}
+                        onDelete={() => setStockToDelete(item)}
                       />
                     ))}
                   </div>
@@ -1028,6 +1043,7 @@ export default function Dashboard() {
                         key={item.id}
                         item={item}
                         onOpen={() => openStock(item)}
+                        onDelete={() => setStockToDelete(item)}
                       />
                     ))}
                   </div>
@@ -1364,6 +1380,40 @@ export default function Dashboard() {
               <button className="save-btn" onClick={saveQuantity}>
                 บันทึกจำนวน
               </button>
+            </footer>
+          </section>
+        </div>
+      )}
+      {stockToDelete && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && setStockToDelete(null)
+          }
+        >
+          <section
+            className="stock-modal confirm-delete-modal"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="confirm-stock-delete-title"
+            aria-describedby="confirm-stock-delete-description"
+          >
+            <header>
+              <div>
+                <small>ยืนยันการลบสต็อก</small>
+                <h2 id="confirm-stock-delete-title">ลบ {stockToDelete.name} หรือไม่?</h2>
+                <p id="confirm-stock-delete-description">{stockToDelete.detail} · {stockToDelete.quantity.toLocaleString("th-TH")} {stockToDelete.unit}</p>
+              </div>
+              <button type="button" onClick={() => setStockToDelete(null)} aria-label="ปิด"><X size={20} /></button>
+            </header>
+            <div className="confirm-delete-copy">
+              <Trash2 size={24} />
+              <p>รายการนี้จะถูกลบออกจากสต็อกและฐานข้อมูล Cloud การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+            </div>
+            <footer>
+              <button type="button" className="cancel-btn" onClick={() => setStockToDelete(null)}>ยกเลิก</button>
+              <button type="button" className="delete-confirm-btn" onClick={() => removeStock(stockToDelete)}>ยืนยันการลบ</button>
             </footer>
           </section>
         </div>
