@@ -53,7 +53,7 @@ export default function Dashboard() {
       <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
         <div className="brand">
           <div className="brand-mark"><span>ธ</span></div>
-          <div><strong>ธารา POS</strong><small>Water operations</small></div>
+          <div><strong>Taweechai Store</strong><small>Water operations</small></div>
           <button className="icon-btn sidebar-close" onClick={() => setMobileMenu(false)} aria-label="ปิดเมนู"><X size={20} /></button>
         </div>
         <nav className="side-nav" aria-label="เมนูหลัก">

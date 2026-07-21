@@ -1,5 +1,5 @@
 {
-  "name": "twc-water-pos",
+  "name": "taweechai-store",
   "private": true,
   "version": "0.1.0",
   "workspaces": ["apps/*"],

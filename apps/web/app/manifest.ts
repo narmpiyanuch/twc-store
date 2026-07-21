@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "ธารา POS",
-    short_name: "ธารา POS",
+    name: "Taweechai Store",
+    short_name: "Taweechai",
     description: "ระบบขาย สต็อก และการผลิตน้ำดื่ม",
     start_url: "/",
     display: "standalone",
