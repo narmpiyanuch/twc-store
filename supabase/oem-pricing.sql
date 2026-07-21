@@ -1,0 +1,12 @@
+create table if not exists public.oem_pack_prices (id text primary key, size_label text not null, tier_packs integer not null check (tier_packs in (100,250)), price_per_pack numeric(12,2) not null default 0 check (price_per_pack >= 0), updated_at timestamptz not null default now(), unique(size_label,tier_packs));
+create table if not exists public.delivery_settings (id text primary key, fuel_efficiency numeric(8,2) not null default 11.5 check (fuel_efficiency > 0), updated_at timestamptz not null default now());
+alter table public.oem_pack_prices enable row level security;
+alter table public.delivery_settings enable row level security;
+drop policy if exists "Authenticated users can manage oem_pack_prices" on public.oem_pack_prices;
+create policy "Authenticated users can manage oem_pack_prices" on public.oem_pack_prices for all to authenticated using (true) with check (true);
+drop policy if exists "Authenticated users can manage delivery_settings" on public.delivery_settings;
+create policy "Authenticated users can manage delivery_settings" on public.delivery_settings for all to authenticated using (true) with check (true);
+grant select, insert, update, delete on public.oem_pack_prices to authenticated;
+grant select, insert, update, delete on public.delivery_settings to authenticated;
+insert into public.oem_pack_prices (id,size_label,tier_packs,price_per_pack) values ('350-100','350 ml',100,0),('350-250','350 ml',250,0),('500-600-100','500/600 ml',100,0),('500-600-250','500/600 ml',250,0),('1500-100','1,500 ml',100,0),('1500-250','1,500 ml',250,0) on conflict (id) do nothing;
+insert into public.delivery_settings (id,fuel_efficiency) values ('pickup',11.5) on conflict (id) do nothing;

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import {
   Boxes,
+  Calculator,
   ChevronDown,
   ChevronRight,
   Database,
@@ -25,6 +26,8 @@ import {
   deleteRecord,
   InventoryRecord,
   OemRecord,
+  OemPackPrice,
+  DeliverySetting,
   readAll,
   saveMany,
   saveRecord,
@@ -38,6 +41,7 @@ const navItems = [
   { label: "ภาพรวม", icon: Home },
   { label: "สต็อก", icon: Boxes },
   { label: "ลูกค้า OEM", icon: Users },
+  { label: "ราคา OEM", icon: Calculator },
   { label: "Supplier", icon: Factory },
 ];
 const supplierBottleSizes = [350, 500, 600, 780, 1500];
@@ -48,6 +52,9 @@ const decimalOnly = (value: string) => {
   if (!fractionParts.length) return whole;
   return `${whole || "0"}.${fractionParts.join("").slice(0, 4)}`;
 };
+const initialOemPrices: OemPackPrice[] = [
+  ["350", "350 ml"], ["500-600", "500/600 ml"], ["1500", "1,500 ml"],
+].flatMap(([key, sizeLabel]) => [100, 250].map((tierPacks) => ({ id: `${key}-${tierPacks}`, sizeLabel, tierPacks, pricePerPack: 0, updatedAt: new Date(0).toISOString() })));
 
 const initialInventory: InventoryRecord[] = [
   ...[350, 500, 600, 780, 1500].map((size, i) => ({
@@ -283,6 +290,8 @@ export default function Dashboard() {
   const [oemName, setOemName] = useState("");
   const [oemQuantity, setOemQuantity] = useState("");
   const [showOemForm, setShowOemForm] = useState(false);
+  const [oemPrices, setOemPrices] = useState<OemPackPrice[]>(initialOemPrices);
+  const [deliveryDraft, setDeliveryDraft] = useState({ sizeLabel: "350 ml", distance: "", fuelEfficiency: "11.5", fuelPrice: "", packs: "100", trips: "1" });
   const [databaseReady, setDatabaseReady] = useState(false);
   const [selectedStock, setSelectedStock] = useState<InventoryRecord | null>(
     null,
@@ -420,6 +429,15 @@ export default function Dashboard() {
       setDatabaseReady(true);
     };
     hydrate().catch(() => setDatabaseReady(true));
+  }, [session]);
+
+  useEffect(() => {
+    if (!session) return;
+    Promise.all([readAll<OemPackPrice>("oemPackPrices"), readAll<DeliverySetting>("deliverySettings")])
+      .then(([prices, settings]) => {
+        if (prices.length) setOemPrices(prices);
+        if (settings[0]) setDeliveryDraft((value) => ({ ...value, fuelEfficiency: String(settings[0].fuelEfficiency) }));
+      }).catch(() => undefined);
   }, [session]);
 
   const bottleSize = (item: InventoryRecord) =>
@@ -711,6 +729,26 @@ export default function Dashboard() {
     ]);
     setFactoryToDelete(null);
   };
+
+  const saveOemPrice = async (price: OemPackPrice, value: string) => {
+    const updated = { ...price, pricePerPack: Number(value) || 0, updatedAt: new Date().toISOString() };
+    setOemPrices((items) => items.map((item) => item.id === updated.id ? updated : item));
+    await saveRecord("oemPackPrices", updated);
+  };
+  const saveFuelEfficiency = async () => {
+    const fuelEfficiency = Number(deliveryDraft.fuelEfficiency);
+    if (fuelEfficiency <= 0) return;
+    await saveRecord("deliverySettings", { id: "pickup", fuelEfficiency, updatedAt: new Date().toISOString() } as DeliverySetting);
+  };
+  const deliveryResult = useMemo(() => {
+    const packs = Number(deliveryDraft.packs) || 0, trips = Number(deliveryDraft.trips) || 0, distance = Number(deliveryDraft.distance) || 0, efficiency = Number(deliveryDraft.fuelEfficiency) || 0, fuelPrice = Number(deliveryDraft.fuelPrice) || 0;
+    const tier = packs >= 250 ? 250 : 100;
+    const base = oemPrices.find((item) => item.sizeLabel === deliveryDraft.sizeLabel && item.tierPacks === tier)?.pricePerPack ?? 0;
+    const liters = efficiency > 0 ? (distance * trips) / efficiency : 0;
+    const fuelTotal = liters * fuelPrice;
+    const fuelPerPack = packs > 0 ? fuelTotal / packs : 0;
+    return { tier, base, liters, fuelTotal, fuelPerPack, delivered: base + fuelPerPack, total: (base + fuelPerPack) * packs };
+  }, [deliveryDraft, oemPrices]);
 
   const enterApp = async () => {
     setAuthLoading(true);
@@ -1095,6 +1133,13 @@ export default function Dashboard() {
                 </article>
               </section>
             </>
+          )}
+
+          {active === "ราคา OEM" && (
+            <><section className="welcome inventory-welcome"><div><p className="eyebrow"><Calculator size={16} /> ราคา OEM</p><h1>ราคาต่อแพ็คและราคาจัดส่ง</h1><p>ดูเรทปัจจุบันและคำนวณค่าน้ำมันต่อแพ็คจากระยะทางไป–กลับ</p></div></section><section className="oem-pricing-layout">
+              <article className="panel oem-price-panel"><div className="section-heading"><div><h2>ราคาต่อแพ็คปัจจุบัน</h2><p>เรท 100 และ 250 แพ็ค</p></div></div><div className="oem-price-table"><div className="oem-price-head"><span>ขนาด</span><span>เรท 100</span><span>เรท 250</span></div>{["350 ml","500/600 ml","1,500 ml"].map((size) => <div className="oem-price-row" key={size}><strong>{size}</strong>{[100,250].map((tier) => { const price=oemPrices.find((item)=>item.sizeLabel===size&&item.tierPacks===tier)!; return <label key={tier}>฿<input aria-label={`${size} เรท ${tier} แพ็ค`} inputMode="decimal" value={price?.pricePerPack ?? 0} onChange={(event)=>setOemPrices((items)=>items.map((item)=>item.id===price.id?{...item,pricePerPack:Number(decimalOnly(event.target.value))}:item))} onBlur={(event)=>saveOemPrice(price,event.target.value)} /></label>})}</div>)}</div></article>
+              <article className="panel delivery-calculator"><div className="section-heading"><div><h2>คำนวณราคาไปส่ง</h2><p>รถกระบะ ค่าเริ่มต้น 11.5 กม./ลิตร</p></div></div><div className="delivery-form"><label>ขนาดสินค้า<select value={deliveryDraft.sizeLabel} onChange={(event)=>setDeliveryDraft((value)=>({...value,sizeLabel:event.target.value}))}><option>350 ml</option><option>500/600 ml</option><option>1,500 ml</option></select></label><label>ระยะทางไป–กลับ (กม.)<input inputMode="decimal" value={deliveryDraft.distance} onChange={(event)=>setDeliveryDraft((value)=>({...value,distance:decimalOnly(event.target.value)}))} placeholder="0" /></label><label>อัตราสิ้นเปลือง (กม./ลิตร)<input inputMode="decimal" value={deliveryDraft.fuelEfficiency} onChange={(event)=>setDeliveryDraft((value)=>({...value,fuelEfficiency:decimalOnly(event.target.value)}))} onBlur={saveFuelEfficiency} /></label><label>ราคาน้ำมัน (บาท/ลิตร)<input inputMode="decimal" value={deliveryDraft.fuelPrice} onChange={(event)=>setDeliveryDraft((value)=>({...value,fuelPrice:decimalOnly(event.target.value)}))} placeholder="0.00" /></label><label>จำนวนแพ็คที่จัดส่ง<input inputMode="numeric" value={deliveryDraft.packs} onChange={(event)=>setDeliveryDraft((value)=>({...value,packs:digitsOnly(event.target.value)}))} /></label><label>จำนวนเที่ยว<input inputMode="numeric" value={deliveryDraft.trips} onChange={(event)=>setDeliveryDraft((value)=>({...value,trips:digitsOnly(event.target.value)}))} /></label></div><div className="delivery-result"><div><span>เรทราคา</span><strong>{deliveryResult.tier} แพ็ค · ฿{deliveryResult.base.toFixed(2)}</strong></div><div><span>น้ำมันที่ใช้</span><strong>{deliveryResult.liters.toFixed(2)} ลิตร</strong></div><div><span>ค่าน้ำมันรวม</span><strong>฿{deliveryResult.fuelTotal.toFixed(2)}</strong></div><div><span>ค่าน้ำมันต่อแพ็ค</span><strong>฿{deliveryResult.fuelPerPack.toFixed(2)}</strong></div><div className="delivery-total"><span>ราคาพร้อมส่งต่อแพ็ค</span><strong>฿{deliveryResult.delivered.toFixed(2)}</strong></div><div><span>ยอดรวม</span><strong>฿{deliveryResult.total.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div></div></article>
+            </section></>
           )}
 
           {active === "Supplier" && (

@@ -5,7 +5,9 @@ export type OemRecord = { id: string; name: string; quantity: number; updatedAt:
 export type SupplierRecord = { id: string; factoryId: string; sizeMl: number; pricePerBottle: number; bottlesPerPack: number; updatedAt: string };
 export type SupplierFactory = { id: string; name: string; createdAt: string; updatedAt: string };
 export type SupplierLog = { id: string; supplierId: string; factory: string; action: "created" | "updated" | "deleted"; summary: string; createdAt: string };
-export type StoreName = "inventory" | "oem" | "suppliers" | "supplierFactories" | "supplierLogs";
+export type OemPackPrice = { id: string; sizeLabel: string; tierPacks: number; pricePerPack: number; updatedAt: string };
+export type DeliverySetting = { id: string; fuelEfficiency: number; updatedAt: string };
+export type StoreName = "inventory" | "oem" | "suppliers" | "supplierFactories" | "supplierLogs" | "oemPackPrices" | "deliverySettings";
 
 const tables: Record<StoreName, string> = {
   inventory: "inventory",
@@ -13,6 +15,8 @@ const tables: Record<StoreName, string> = {
   suppliers: "suppliers",
   supplierFactories: "supplier_factories",
   supplierLogs: "supplier_logs",
+  oemPackPrices: "oem_pack_prices",
+  deliverySettings: "delivery_settings",
 };
 
 const toDatabase = (store: StoreName, value: unknown) => {
@@ -21,6 +25,8 @@ const toDatabase = (store: StoreName, value: unknown) => {
   if (store === "suppliers") return { id: item.id, factory_id: item.factoryId, size_ml: item.sizeMl, price_per_bottle: item.pricePerBottle, bottles_per_pack: item.bottlesPerPack, updated_at: item.updatedAt };
   if (store === "supplierFactories") return { id: item.id, name: item.name, created_at: item.createdAt, updated_at: item.updatedAt };
   if (store === "supplierLogs") return { id: item.id, supplier_id: item.supplierId, factory: item.factory, action: item.action, summary: item.summary, created_at: item.createdAt };
+  if (store === "oemPackPrices") return { id: item.id, size_label: item.sizeLabel, tier_packs: item.tierPacks, price_per_pack: item.pricePerPack, updated_at: item.updatedAt };
+  if (store === "deliverySettings") return { id: item.id, fuel_efficiency: item.fuelEfficiency, updated_at: item.updatedAt };
   return item;
 };
 
@@ -29,6 +35,8 @@ const fromDatabase = (store: StoreName, value: Record<string, unknown>) => {
   if (store === "suppliers") return { id: value.id, factoryId: value.factory_id, sizeMl: value.size_ml, pricePerBottle: Number(value.price_per_bottle), bottlesPerPack: value.bottles_per_pack, updatedAt: value.updated_at };
   if (store === "supplierFactories") return { id: value.id, name: value.name, createdAt: value.created_at, updatedAt: value.updated_at };
   if (store === "supplierLogs") return { id: value.id, supplierId: value.supplier_id, factory: value.factory, action: value.action, summary: value.summary, createdAt: value.created_at };
+  if (store === "oemPackPrices") return { id: value.id, sizeLabel: value.size_label, tierPacks: value.tier_packs, pricePerPack: Number(value.price_per_pack), updatedAt: value.updated_at };
+  if (store === "deliverySettings") return { id: value.id, fuelEfficiency: Number(value.fuel_efficiency), updatedAt: value.updated_at };
   return value;
 };
 
