@@ -9,5 +9,13 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "standalone",
     background_color: "#f6fafb",
     theme_color: "#087b8c",
+    icons: [
+      {
+        src: "/insight-taweechai-logo.jpg",
+        sizes: "500x500",
+        type: "image/jpeg",
+        purpose: "any",
+      },
+    ],
   };
 }

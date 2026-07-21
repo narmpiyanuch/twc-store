@@ -5,6 +5,23 @@ export const metadata: Metadata = {
   title: "Insight Taweechai — ระบบจัดการสต็อกน้ำดื่ม",
   description: "POS, stock และการผลิตสำหรับธุรกิจน้ำดื่ม",
   applicationName: "Insight Taweechai",
+  icons: {
+    icon: [
+      {
+        url: "/insight-taweechai-logo.jpg",
+        type: "image/jpeg",
+        sizes: "500x500",
+      },
+    ],
+    shortcut: "/insight-taweechai-logo.jpg",
+    apple: [
+      {
+        url: "/insight-taweechai-logo.jpg",
+        type: "image/jpeg",
+        sizes: "500x500",
+      },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
