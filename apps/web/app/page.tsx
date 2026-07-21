@@ -41,6 +41,13 @@ const navItems = [
   { label: "Supplier", icon: Factory },
 ];
 const supplierBottleSizes = [350, 500, 600, 780, 1500];
+const digitsOnly = (value: string) => value.replace(/\D/g, "");
+const decimalOnly = (value: string) => {
+  const cleaned = value.replace(/[^\d.]/g, "");
+  const [whole, ...fractionParts] = cleaned.split(".");
+  if (!fractionParts.length) return whole;
+  return `${whole || "0"}.${fractionParts.join("").slice(0, 4)}`;
+};
 
 const initialInventory: InventoryRecord[] = [
   ...[350, 500, 600, 780, 1500].map((size, i) => ({
@@ -1335,10 +1342,11 @@ export default function Dashboard() {
               <label>
                 จำนวนคงเหลือ
                 <input
-                  type="number"
-                  min="0"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={editQuantity}
-                  onChange={(event) => setEditQuantity(event.target.value)}
+                  onChange={(event) => setEditQuantity(digitsOnly(event.target.value))}
                 />
                 <span>{selectedStock.unit}</span>
               </label>
@@ -1457,13 +1465,14 @@ export default function Dashboard() {
                   จำนวนเริ่มต้น
                   <input
                     required
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={newStock.quantity}
                     onChange={(event) =>
                       setNewStock((value) => ({
                         ...value,
-                        quantity: event.target.value,
+                        quantity: digitsOnly(event.target.value),
                       }))
                     }
                     placeholder="0"
@@ -1541,10 +1550,11 @@ export default function Dashboard() {
                 <label>
                   จำนวนห่อในสต็อก
                   <input
-                    type="number"
-                    min="0"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={oemQuantity}
-                    onChange={(event) => setOemQuantity(event.target.value)}
+                    onChange={(event) => setOemQuantity(digitsOnly(event.target.value))}
                     placeholder="0"
                     required
                   />
@@ -1685,15 +1695,14 @@ export default function Dashboard() {
                   ราคาต่อขวด (บาท)
                   <input
                     required
-                    type="number"
+                    type="text"
                     inputMode="decimal"
-                    min="0"
-                    step="0.0001"
+                    pattern="[0-9]+([.][0-9]{0,4})?"
                     value={supplierDraft.pricePerBottle}
                     onChange={(event) =>
                       setSupplierDraft((value) => ({
                         ...value,
-                        pricePerBottle: event.target.value,
+                        pricePerBottle: decimalOnly(event.target.value),
                       }))
                     }
                     placeholder="0.0000"
@@ -1703,15 +1712,14 @@ export default function Dashboard() {
                   จำนวนขวดต่อห่อ
                   <input
                     required
-                    type="number"
+                    type="text"
                     inputMode="numeric"
-                    min="1"
-                    step="1"
+                    pattern="[0-9]*"
                     value={supplierDraft.bottlesPerPack}
                     onChange={(event) =>
                       setSupplierDraft((value) => ({
                         ...value,
-                        bottlesPerPack: event.target.value,
+                        bottlesPerPack: digitsOnly(event.target.value),
                       }))
                     }
                     placeholder="0"
