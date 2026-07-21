@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Boxes, ChevronRight, Database, Factory, GlassWater, History, Home, Package, Palette, Pencil, Plus, Trash2, Users, X } from "lucide-react";
+import { Boxes, ChevronDown, ChevronRight, Database, Factory, GlassWater, History, Home, Package, Palette, Pencil, Plus, Trash2, Users, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { deleteRecord, InventoryRecord, OemRecord, readAll, saveMany, saveRecord, SupplierLog, SupplierRecord } from "@/lib/database";
 
@@ -72,6 +72,7 @@ export default function Dashboard() {
   const [showSupplierForm, setShowSupplierForm] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<SupplierRecord | null>(null);
   const [supplierDraft, setSupplierDraft] = useState({ factory: "", sizeMl: "350", pricePerBottle: "", bottlesPerPack: "" });
+  const [expandedFactories, setExpandedFactories] = useState<string[]>([]);
 
   useEffect(() => {
     const hydrate = async () => {
@@ -109,6 +110,10 @@ export default function Dashboard() {
   const capTotal = caps.reduce((sum, item) => sum + item.quantity, 0);
   const oemTotal = oemItems.reduce((sum, item) => sum + item.quantity, 0);
   const latestOem = useMemo(() => [...oemItems].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 4), [oemItems]);
+  const supplierGroups = useMemo(() => Object.entries(suppliers.reduce<Record<string, SupplierRecord[]>>((groups, item) => {
+    (groups[item.factory] ??= []).push(item);
+    return groups;
+  }, {})).map(([factory, items]) => [factory, items.sort((a,b) => a.sizeMl-b.sizeMl)] as const).sort(([a],[b]) => a.localeCompare(b,"th")), [suppliers]);
 
   const openStock = (item: InventoryRecord) => { setSelectedStock(item); setEditQuantity(String(item.quantity)); };
   const adjustDraft = (delta: number) => setEditQuantity(value => String(Math.max(0, (Number(value) || 0) + delta)));
@@ -175,6 +180,7 @@ export default function Dashboard() {
   };
 
   const goTo = (label: string) => setActive(label);
+  const toggleFactory = (factory: string) => setExpandedFactories(items => items.includes(factory) ? items.filter(item => item !== factory) : [...items, factory]);
 
   return <div className="app-shell">
     <aside className="sidebar">
@@ -213,7 +219,7 @@ export default function Dashboard() {
           <section className="welcome inventory-welcome"><div><p className="eyebrow"><Factory size={16} /> Supplier</p><h1>ราคาขวดจากโรงงาน</h1><p>จัดเก็บราคาต่อขวดและจำนวนขวดต่อห่อแยกตามโรงงานและขนาด พร้อมประวัติการแก้ไขทุกครั้ง</p></div><button className="secondary-btn add-stock-button" onClick={() => openSupplierForm()}><Plus size={18} /> เพิ่มข้อมูลโรงงาน</button></section>
           <section className="supplier-layout">
             <article className="panel supplier-directory"><div className="section-heading"><div><h2>รายการราคาปัจจุบัน</h2><p>{suppliers.length} รายการ จาก {new Set(suppliers.map(item => item.factory)).size} โรงงาน</p></div></div>
-              <div className="supplier-list">{[...suppliers].sort((a,b) => a.factory.localeCompare(b.factory,"th") || a.sizeMl-b.sizeMl).map(item => <article key={item.id}><span className="supplier-factory-icon"><Factory size={20} /></span><div className="supplier-main"><strong>{item.factory}</strong><small>อัปเดต {new Date(item.updatedAt).toLocaleString("th-TH", { dateStyle:"medium", timeStyle:"short" })}</small></div><div className="supplier-size"><strong>{item.sizeMl.toLocaleString("th-TH")} ml</strong><small>ขนาดขวด</small></div><div className="supplier-price"><strong>฿{item.pricePerBottle.toLocaleString("th-TH", { minimumFractionDigits:2, maximumFractionDigits:4 })}</strong><small>ต่อขวด · {item.bottlesPerPack.toLocaleString("th-TH")} ขวด / ห่อ</small></div><div className="supplier-actions"><button onClick={() => openSupplierForm(item)} aria-label={`แก้ไข ${item.factory}`}><Pencil size={16} /></button><button className="danger" onClick={() => removeSupplier(item)} aria-label={`ลบ ${item.factory}`}><Trash2 size={16} /></button></div></article>)}</div>
+              <div className="supplier-groups">{supplierGroups.map(([factory, items]) => { const expanded = expandedFactories.includes(factory); const prices = items.map(item => item.pricePerBottle); return <section className={`supplier-group ${expanded ? "expanded" : ""}`} key={factory}><button className="supplier-group-header" onClick={() => toggleFactory(factory)} aria-expanded={expanded}><span className="supplier-factory-icon"><Factory size={20} /></span><span className="supplier-group-name"><strong>{factory}</strong><small>{items.length} ขนาด · {items.map(item => `${item.sizeMl.toLocaleString("th-TH")} ml`).join(", ")}</small></span><span className="supplier-range"><strong>฿{Math.min(...prices).toLocaleString("th-TH", {minimumFractionDigits:2,maximumFractionDigits:4})}{prices.length > 1 && Math.min(...prices) !== Math.max(...prices) ? ` – ฿${Math.max(...prices).toLocaleString("th-TH", {minimumFractionDigits:2,maximumFractionDigits:4})}` : ""}</strong><small>ราคาต่อขวด</small></span><ChevronDown className="supplier-chevron" size={20} /></button>{expanded && <div className="supplier-group-items">{items.map(item => <article key={item.id}><div className="supplier-size"><strong>{item.sizeMl.toLocaleString("th-TH")} ml</strong><small>ขนาดขวด</small></div><div className="supplier-pack"><strong>{item.bottlesPerPack.toLocaleString("th-TH")} ขวด</strong><small>ต่อห่อ</small></div><div className="supplier-price"><strong>฿{item.pricePerBottle.toLocaleString("th-TH", { minimumFractionDigits:2, maximumFractionDigits:4 })}</strong><small>ราคาต่อขวด</small></div><div className="supplier-actions"><button onClick={() => openSupplierForm(item)} aria-label={`แก้ไข ${factory} ${item.sizeMl} ml`}><Pencil size={16} /></button><button className="danger" onClick={() => removeSupplier(item)} aria-label={`ลบ ${factory} ${item.sizeMl} ml`}><Trash2 size={16} /></button></div></article>)}</div>}</section>})}</div>
               {!suppliers.length && <p className="empty-state">ยังไม่มีข้อมูล Supplier กด “เพิ่มข้อมูลโรงงาน” เพื่อเริ่มต้น</p>}
             </article>
             <aside className="panel supplier-log-panel"><div className="section-heading"><div><h2>ประวัติการแก้ไข</h2><p>บันทึกอัตโนมัติทุกการเปลี่ยนแปลง</p></div><History size={18} /></div><div className="supplier-logs">{[...supplierLogs].sort((a,b) => b.createdAt.localeCompare(a.createdAt)).slice(0,50).map(log => <article key={log.id}><span className={`log-dot ${log.action}`} /><div><strong>{log.factory}</strong><p>{log.summary}</p><small>{new Date(log.createdAt).toLocaleString("th-TH", { dateStyle:"medium", timeStyle:"short" })}</small></div></article>)}</div>{!supplierLogs.length && <p className="empty-state">ประวัติจะปรากฏเมื่อมีการเพิ่มหรือแก้ไขข้อมูล</p>}</aside>
