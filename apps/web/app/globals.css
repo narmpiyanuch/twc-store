@@ -134,12 +134,12 @@ html,body{background:var(--surface-alt)}
 
 /* One-tap anonymous cloud access */
 .auth-card{display:grid;justify-items:center;gap:28px;width:min(420px,100%);padding:56px 40px}
-.auth-logo{width:min(260px,100%);height:auto;aspect-ratio:1.7;margin:0;object-fit:contain}
+.auth-logo{width:min(350px,100%);height:170px;aspect-ratio:auto;margin:0;object-fit:cover;object-position:center}
 .auth-enter-button{width:100%;min-height:54px;border:0;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:10px;padding:0 20px;color:#fff;background:linear-gradient(110deg,#078f8c 0%,#004f4d 100%);box-shadow:0 8px 22px rgba(0,79,77,.24);font:800 13px/1 inherit;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,opacity .18s ease}
 .auth-enter-button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 11px 26px rgba(0,79,77,.3)}.auth-enter-button:active:not(:disabled){transform:translateY(0)}.auth-enter-button:focus-visible{outline:3px solid rgba(8,155,152,.28);outline-offset:3px}.auth-enter-button:disabled{cursor:wait;opacity:.82}
 .auth-spinner{width:19px;height:19px;border:2px solid rgba(255,255,255,.38);border-top-color:#fff;border-radius:50%;animation:auth-spin .7s linear infinite}.auth-card>.auth-message{width:100%;margin:-12px 0 0;text-align:center}
 @keyframes auth-spin{to{transform:rotate(360deg)}}
-@media(max-width:760px){.auth-card{gap:24px;padding:40px 24px}.auth-enter-button{min-height:52px;font-size:12px}}
+@media(max-width:760px){.auth-card{gap:24px;padding:40px 24px}.auth-logo{width:min(310px,100%);height:150px}.auth-enter-button{min-height:52px;font-size:12px}}
 @media(prefers-reduced-motion:reduce){.auth-spinner{animation-duration:1.4s}.auth-enter-button{transition:none}}
 
 /* OEM pack pricing and delivery calculator */
