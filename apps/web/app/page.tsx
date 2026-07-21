@@ -528,10 +528,6 @@ export default function Dashboard() {
     setSelectedStock(item);
     setEditQuantity(String(item.quantity));
   };
-  const adjustDraft = (delta: number) =>
-    setEditQuantity((value) =>
-      String(Math.max(0, (Number(value) || 0) + delta)),
-    );
   const saveQuantity = async () => {
     if (!selectedStock) return;
     const updated = {
@@ -1789,10 +1785,7 @@ export default function Dashboard() {
                 <X size={20} />
               </button>
             </header>
-            <div className="quantity-editor">
-              <button onClick={() => adjustDraft(-1)} aria-label="ลดจำนวน">
-                −
-              </button>
+            <div className="quantity-editor single-input">
               <label>
                 จำนวนคงเหลือ
                 <input
@@ -1806,9 +1799,6 @@ export default function Dashboard() {
                 />
                 <span>{selectedStock.unit}</span>
               </label>
-              <button onClick={() => adjustDraft(1)} aria-label="เพิ่มจำนวน">
-                +
-              </button>
             </div>
             <footer>
               <button

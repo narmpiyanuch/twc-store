@@ -176,6 +176,7 @@ html,body{font-family:"Google Sans","Noto Sans Thai","Leelawadee UI",Tahoma,sans
 }
 
 /* Shared edit and delete actions */
+.quantity-editor.single-input{grid-template-columns:1fr}
 .inventory-card-shell .inventory-card-button{padding-right:92px}
 .stock-card-actions{position:absolute;right:10px;top:50%;transform:translateY(-50%);z-index:2}
 .oem-list article>.oem-actions{display:flex;min-width:72px;flex-direction:row;justify-content:flex-end}
