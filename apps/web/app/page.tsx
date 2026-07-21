@@ -1,14 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { Boxes, ChevronRight, Database, GlassWater, Home, Package, Palette, Plus, Trash2, Users, X } from "lucide-react";
+import { Boxes, ChevronRight, Database, Factory, GlassWater, History, Home, Package, Palette, Pencil, Plus, Trash2, Users, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { deleteRecord, InventoryRecord, OemRecord, readAll, saveMany, saveRecord } from "@/lib/database";
+import { deleteRecord, InventoryRecord, OemRecord, readAll, saveMany, saveRecord, SupplierLog, SupplierRecord } from "@/lib/database";
 
 const navItems = [
   { label: "ภาพรวม", icon: Home },
   { label: "สต็อก", icon: Boxes },
   { label: "ลูกค้า OEM", icon: Users },
+  { label: "Supplier", icon: Factory },
 ];
 
 const initialInventory: InventoryRecord[] = [
@@ -66,10 +67,15 @@ export default function Dashboard() {
   const [editQuantity, setEditQuantity] = useState("");
   const [showAddStock, setShowAddStock] = useState(false);
   const [newStock, setNewStock] = useState({ name: "", detail: "", quantity: "", unit: "ลัง", category: "cap", brand: "เนบิวลา" });
+  const [suppliers, setSuppliers] = useState<SupplierRecord[]>([]);
+  const [supplierLogs, setSupplierLogs] = useState<SupplierLog[]>([]);
+  const [showSupplierForm, setShowSupplierForm] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<SupplierRecord | null>(null);
+  const [supplierDraft, setSupplierDraft] = useState({ factory: "", sizeMl: "350", pricePerPack: "", bottlesPerPack: "" });
 
   useEffect(() => {
     const hydrate = async () => {
-      const [storedInventory, storedOem] = await Promise.all([readAll<InventoryRecord>("inventory"), readAll<OemRecord>("oem")]);
+      const [storedInventory, storedOem, storedSuppliers, storedSupplierLogs] = await Promise.all([readAll<InventoryRecord>("inventory"), readAll<OemRecord>("oem"), readAll<SupplierRecord>("suppliers"), readAll<SupplierLog>("supplierLogs")]);
       if (storedInventory.length) {
         const migrated = storedInventory.map(item => {
           const legacyCategory = item.category as string;
@@ -79,6 +85,8 @@ export default function Dashboard() {
         setInventory(migrated); await saveMany("inventory", migrated);
       } else await saveMany("inventory", initialInventory);
       if (storedOem.length) setOemItems(storedOem); else await saveMany("oem", initialOem);
+      setSuppliers(storedSuppliers);
+      setSupplierLogs(storedSupplierLogs);
       setDatabaseReady(true);
     };
     hydrate().catch(() => setDatabaseReady(true));
@@ -127,6 +135,38 @@ export default function Dashboard() {
     await deleteRecord("oem", id);
   };
 
+  const openSupplierForm = (supplier?: SupplierRecord) => {
+    setEditingSupplier(supplier ?? null);
+    setSupplierDraft(supplier ? { factory: supplier.factory, sizeMl: String(supplier.sizeMl), pricePerPack: String(supplier.pricePerPack), bottlesPerPack: String(supplier.bottlesPerPack) } : { factory: "", sizeMl: "350", pricePerPack: "", bottlesPerPack: "" });
+    setShowSupplierForm(true);
+  };
+
+  const saveSupplier = async (event: FormEvent) => {
+    event.preventDefault();
+    const pricePerPack = Number(supplierDraft.pricePerPack);
+    const bottlesPerPack = Number(supplierDraft.bottlesPerPack);
+    const sizeMl = Number(supplierDraft.sizeMl);
+    if (!supplierDraft.factory.trim() || !Number.isFinite(pricePerPack) || !Number.isFinite(bottlesPerPack) || !Number.isFinite(sizeMl) || pricePerPack < 0 || bottlesPerPack <= 0 || sizeMl <= 0) return;
+    const now = new Date().toISOString();
+    const record: SupplierRecord = { id: editingSupplier?.id ?? crypto.randomUUID(), factory: supplierDraft.factory.trim(), sizeMl, pricePerPack, bottlesPerPack, updatedAt: now };
+    const action: SupplierLog["action"] = editingSupplier ? "updated" : "created";
+    const summary = editingSupplier
+      ? `แก้ไข ${sizeMl} ml: ฿${editingSupplier.pricePerPack.toLocaleString("th-TH")} → ฿${pricePerPack.toLocaleString("th-TH")} / ${editingSupplier.bottlesPerPack.toLocaleString("th-TH")} → ${bottlesPerPack.toLocaleString("th-TH")} ขวดต่อห่อ`
+      : `เพิ่มขวด ${sizeMl} ml ราคา ฿${pricePerPack.toLocaleString("th-TH")} จำนวน ${bottlesPerPack.toLocaleString("th-TH")} ขวดต่อห่อ`;
+    const log: SupplierLog = { id: crypto.randomUUID(), supplierId: record.id, factory: record.factory, action, summary, createdAt: now };
+    setSuppliers(items => editingSupplier ? items.map(item => item.id === record.id ? record : item) : [...items, record]);
+    setSupplierLogs(items => [log, ...items]);
+    await Promise.all([saveRecord("suppliers", record), saveRecord("supplierLogs", log)]);
+    setShowSupplierForm(false); setEditingSupplier(null);
+  };
+
+  const removeSupplier = async (supplier: SupplierRecord) => {
+    const log: SupplierLog = { id: crypto.randomUUID(), supplierId: supplier.id, factory: supplier.factory, action: "deleted", summary: `ลบขวด ${supplier.sizeMl} ml ราคา ฿${supplier.pricePerPack.toLocaleString("th-TH")} จำนวน ${supplier.bottlesPerPack.toLocaleString("th-TH")} ขวดต่อห่อ`, createdAt: new Date().toISOString() };
+    setSuppliers(items => items.filter(item => item.id !== supplier.id));
+    setSupplierLogs(items => [log, ...items]);
+    await Promise.all([deleteRecord("suppliers", supplier.id), saveRecord("supplierLogs", log)]);
+  };
+
   const goTo = (label: string) => setActive(label);
 
   return <div className="app-shell">
@@ -161,11 +201,23 @@ export default function Dashboard() {
           <section className="welcome inventory-welcome"><div><p className="eyebrow"><Users size={16} /> ลูกค้า OEM</p><h1>สต็อกขวดของลูกค้า</h1><p>เพิ่มและตรวจสอบจำนวนห่อที่เก็บไว้สำหรับแต่ละแบรนด์ลูกค้า</p></div><button className="secondary-btn oem-add-button" onClick={() => setShowOemForm(true)}><Plus size={18} /> เพิ่มลูกค้า OEM</button></section>
           <section className="oem-page-grid single"><article className="panel oem-directory"><div className="section-heading"><div><h2>รายการลูกค้า OEM</h2><p>{oemItems.length} ลูกค้า · {oemTotal.toLocaleString("th-TH")} ห่อ</p></div></div><OemList items={oemItems} onRemove={removeOem} />{!oemItems.length && <p className="empty-state">ยังไม่มีข้อมูล OEM กด “เพิ่มลูกค้า OEM” เพื่อเริ่มต้น</p>}</article></section>
         </>}
+
+        {active === "Supplier" && <>
+          <section className="welcome inventory-welcome"><div><p className="eyebrow"><Factory size={16} /> Supplier</p><h1>ราคาขวดจากโรงงาน</h1><p>จัดเก็บราคาและจำนวนขวดต่อห่อแยกตามโรงงานและขนาด พร้อมประวัติการแก้ไขทุกครั้ง</p></div><button className="secondary-btn add-stock-button" onClick={() => openSupplierForm()}><Plus size={18} /> เพิ่มข้อมูลโรงงาน</button></section>
+          <section className="supplier-layout">
+            <article className="panel supplier-directory"><div className="section-heading"><div><h2>รายการราคาปัจจุบัน</h2><p>{suppliers.length} รายการ จาก {new Set(suppliers.map(item => item.factory)).size} โรงงาน</p></div></div>
+              <div className="supplier-list">{[...suppliers].sort((a,b) => a.factory.localeCompare(b.factory,"th") || a.sizeMl-b.sizeMl).map(item => <article key={item.id}><span className="supplier-factory-icon"><Factory size={20} /></span><div className="supplier-main"><strong>{item.factory}</strong><small>อัปเดต {new Date(item.updatedAt).toLocaleString("th-TH", { dateStyle:"medium", timeStyle:"short" })}</small></div><div className="supplier-size"><strong>{item.sizeMl.toLocaleString("th-TH")} ml</strong><small>ขนาดขวด</small></div><div className="supplier-price"><strong>฿{item.pricePerPack.toLocaleString("th-TH", { minimumFractionDigits:2, maximumFractionDigits:2 })}</strong><small>{item.bottlesPerPack.toLocaleString("th-TH")} ขวด / ห่อ</small></div><div className="supplier-actions"><button onClick={() => openSupplierForm(item)} aria-label={`แก้ไข ${item.factory}`}><Pencil size={16} /></button><button className="danger" onClick={() => removeSupplier(item)} aria-label={`ลบ ${item.factory}`}><Trash2 size={16} /></button></div></article>)}</div>
+              {!suppliers.length && <p className="empty-state">ยังไม่มีข้อมูล Supplier กด “เพิ่มข้อมูลโรงงาน” เพื่อเริ่มต้น</p>}
+            </article>
+            <aside className="panel supplier-log-panel"><div className="section-heading"><div><h2>ประวัติการแก้ไข</h2><p>บันทึกอัตโนมัติทุกการเปลี่ยนแปลง</p></div><History size={18} /></div><div className="supplier-logs">{[...supplierLogs].sort((a,b) => b.createdAt.localeCompare(a.createdAt)).slice(0,50).map(log => <article key={log.id}><span className={`log-dot ${log.action}`} /><div><strong>{log.factory}</strong><p>{log.summary}</p><small>{new Date(log.createdAt).toLocaleString("th-TH", { dateStyle:"medium", timeStyle:"short" })}</small></div></article>)}</div>{!supplierLogs.length && <p className="empty-state">ประวัติจะปรากฏเมื่อมีการเพิ่มหรือแก้ไขข้อมูล</p>}</aside>
+          </section>
+        </>}
       </div>
     </main>
     <nav className="bottom-nav compact-nav" aria-label="เมนูมือถือ">{navItems.map(({ label, icon: Icon }) => <button key={label} className={active === label ? "active" : ""} onClick={() => goTo(label)}><Icon size={21} /><span>{label}</span></button>)}</nav>
     {selectedStock && <div className="modal-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && setSelectedStock(null)}><section className="stock-modal" role="dialog" aria-modal="true" aria-labelledby="stock-modal-title"><header><div><small>ปรับจำนวนสต็อก</small><h2 id="stock-modal-title">{selectedStock.name}</h2><p>{selectedStock.detail} · {selectedStock.id}</p></div><button onClick={() => setSelectedStock(null)} aria-label="ปิด"><X size={20} /></button></header><div className="quantity-editor"><button onClick={() => adjustDraft(-1)} aria-label="ลดจำนวน">−</button><label>จำนวนคงเหลือ<input type="number" min="0" value={editQuantity} onChange={event => setEditQuantity(event.target.value)} /><span>{selectedStock.unit}</span></label><button onClick={() => adjustDraft(1)} aria-label="เพิ่มจำนวน">+</button></div><footer><button className="cancel-btn" onClick={() => setSelectedStock(null)}>ยกเลิก</button><button className="save-btn" onClick={saveQuantity}>บันทึกจำนวน</button></footer></section></div>}
     {showAddStock && <div className="modal-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && setShowAddStock(false)}><section className="stock-modal add-stock-modal" role="dialog" aria-modal="true" aria-labelledby="add-stock-title"><header><div><small>สร้างรายการใหม่</small><h2 id="add-stock-title">เพิ่มสต็อก</h2><p>กรอกรายละเอียดและจำนวนเริ่มต้น</p></div><button onClick={() => setShowAddStock(false)} aria-label="ปิด"><X size={20} /></button></header><form onSubmit={addStock}><div className="form-grid"><label>ประเภท<select value={newStock.category} onChange={event => setNewStock(value => ({...value,category:event.target.value,unit:event.target.value === "bottle" ? "ห่อ" : event.target.value === "tank" ? "ถัง" : "ลัง"}))}><option value="bottle">ขวดน้ำ</option><option value="cap">ฝาขวด</option><option value="tank">ถังน้ำ</option><option value="glass">แก้ว/ลังน้ำแก้ว</option></select></label>{newStock.category === "bottle" && <label>ยี่ห้อ<select value={newStock.brand} onChange={event => setNewStock(value => ({...value,brand:event.target.value}))}><option>เนบิวลา</option><option>พีพี</option></select></label>}<label>ชื่อรายการ<input required value={newStock.name} onChange={event => setNewStock(value => ({...value,name:event.target.value}))} placeholder="เช่น ฝาสีเขียว" /></label><label>รายละเอียด<input value={newStock.detail} onChange={event => setNewStock(value => ({...value,detail:event.target.value}))} placeholder="รายละเอียดเพิ่มเติม" /></label><label>จำนวนเริ่มต้น<input required type="number" min="0" value={newStock.quantity} onChange={event => setNewStock(value => ({...value,quantity:event.target.value}))} placeholder="0" /></label><label>หน่วย<input required disabled={newStock.category === "bottle"} value={newStock.category === "bottle" ? "ห่อ" : newStock.unit} onChange={event => setNewStock(value => ({...value,unit:event.target.value}))} placeholder="ลัง" /></label></div><footer><button type="button" className="cancel-btn" onClick={() => setShowAddStock(false)}>ยกเลิก</button><button type="submit" className="save-btn">เพิ่มสต็อก</button></footer></form></section></div>}
     {showOemForm && <div className="modal-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && setShowOemForm(false)}><section className="stock-modal oem-create-modal" role="dialog" aria-modal="true" aria-labelledby="add-oem-title"><header><div><small>ลูกค้า OEM</small><h2 id="add-oem-title">เพิ่มลูกค้า OEM</h2><p>กรอกชื่อและจำนวนห่อในสต็อก</p></div><button onClick={() => setShowOemForm(false)} aria-label="ปิด"><X size={20} /></button></header><form onSubmit={addOem}><div className="form-grid single-column"><label>ชื่อ OEM<input value={oemName} onChange={event => setOemName(event.target.value)} placeholder="เช่น โรงแรมทวีชัย" required /></label><label>จำนวนห่อในสต็อก<input type="number" min="0" value={oemQuantity} onChange={event => setOemQuantity(event.target.value)} placeholder="0" required /></label></div><footer><button type="button" className="cancel-btn" onClick={() => setShowOemForm(false)}>ยกเลิก</button><button type="submit" className="save-btn">บันทึกลูกค้า</button></footer></form></section></div>}
+    {showSupplierForm && <div className="modal-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && setShowSupplierForm(false)}><section className="stock-modal supplier-modal" role="dialog" aria-modal="true" aria-labelledby="supplier-modal-title"><header><div><small>Supplier</small><h2 id="supplier-modal-title">{editingSupplier ? "แก้ไขข้อมูลโรงงาน" : "เพิ่มข้อมูลโรงงาน"}</h2><p>ระบุราคาขวดและจำนวนขวดต่อห่อ</p></div><button onClick={() => setShowSupplierForm(false)} aria-label="ปิด"><X size={20} /></button></header><form onSubmit={saveSupplier}><div className="form-grid"><label>ชื่อโรงงาน<input required value={supplierDraft.factory} onChange={event => setSupplierDraft(value => ({...value,factory:event.target.value}))} placeholder="เช่น โรงงานขวด ABC" /></label><label>ขนาดขวด<select value={supplierDraft.sizeMl} onChange={event => setSupplierDraft(value => ({...value,sizeMl:event.target.value}))}>{[350,500,600,780,1500].map(size => <option key={size} value={size}>{size.toLocaleString("th-TH")} ml</option>)}</select></label><label>ราคาต่อห่อ (บาท)<input required type="number" inputMode="decimal" min="0" step="0.01" value={supplierDraft.pricePerPack} onChange={event => setSupplierDraft(value => ({...value,pricePerPack:event.target.value}))} placeholder="0.00" /></label><label>จำนวนขวดต่อห่อ<input required type="number" inputMode="numeric" min="1" step="1" value={supplierDraft.bottlesPerPack} onChange={event => setSupplierDraft(value => ({...value,bottlesPerPack:event.target.value}))} placeholder="0" /></label></div><footer><button type="button" className="cancel-btn" onClick={() => setShowSupplierForm(false)}>ยกเลิก</button><button type="submit" className="save-btn">{editingSupplier ? "บันทึกการแก้ไข" : "เพิ่ม Supplier"}</button></footer></form></section></div>}
   </div>;
 }
