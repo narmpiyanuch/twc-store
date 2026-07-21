@@ -29,3 +29,28 @@
 @media(max-width:760px){.content.inventory-page{padding-top:14px}.inventory-welcome{padding:0;margin-bottom:12px;gap:0}.inventory-welcome h1{margin:1px 0 1px;line-height:1.35}.inventory-welcome>div>p:last-child{line-height:1.5;max-width:none}.inventory-welcome .eyebrow{margin-bottom:0}.inventory-summary{margin-bottom:10px}.inventory-summary article{min-height:76px}.inventory-main-column{gap:10px}}
 .oem-page-grid.single{grid-template-columns:minmax(0,1fr)}.oem-page-grid.single .oem-directory{width:100%}.form-grid.single-column{grid-template-columns:1fr}.oem-create-modal{width:min(480px,100%)}
 @media(max-width:760px){.inventory-welcome .oem-add-button{display:flex;width:100%;margin-top:12px;color:#fff;background:var(--primary);border-color:var(--primary)}}
+
+/* Modern dark navigation shell */
+:root{--shell:#0b414b;--shell-hover:#125661;--shell-text:#f2fbfc;--shell-muted:#a8c7cb}
+.sidebar{background:var(--shell);border-right-color:rgba(255,255,255,.08);box-shadow:6px 0 24px rgba(8,36,42,.12)}
+.brand strong{color:var(--shell-text)}
+.brand small{color:var(--shell-muted)}
+.brand-logo{border-color:rgba(255,255,255,.18);box-shadow:0 5px 16px rgba(0,0,0,.18)}
+.nav-caption{color:#83a9ae}
+.side-nav button{color:#c3d9dc;transition:background-color .18s ease,color .18s ease,transform .18s ease}
+.side-nav button:hover{background:rgba(255,255,255,.07);color:#fff;transform:translateX(2px)}
+.side-nav button.active{background:var(--shell-hover);color:#fff;box-shadow:inset 3px 0 #70d0d7,0 5px 14px rgba(0,0,0,.12)}
+.side-nav button.active svg{color:#84e1e6}
+.database-status{border-top-color:rgba(255,255,255,.12);color:#79dfca}
+.database-status small{color:var(--shell-muted)}
+.topbar{background:rgba(11,65,75,.97);border-bottom-color:rgba(255,255,255,.08);box-shadow:0 4px 18px rgba(8,36,42,.12)}
+.topbar-title strong{color:var(--shell-text)}
+.topbar-title small,.save-state{color:var(--shell-muted)}
+.save-state i{background:#5fe0ba;box-shadow:0 0 0 3px rgba(95,224,186,.15)}
+.topbar .icon-btn{color:var(--shell-text);background:transparent;border-color:rgba(255,255,255,.16)}
+.topbar .icon-btn:hover{background:rgba(255,255,255,.09)}
+.sidebar .sidebar-close{color:#fff;background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.14)}
+.add-stock-button,.oem-add-button{color:#fff;background:var(--shell);border-color:var(--shell);box-shadow:0 5px 14px rgba(11,65,75,.2);transition:background-color .18s ease,box-shadow .18s ease,transform .18s ease}
+.add-stock-button:hover,.oem-add-button:hover{background:var(--shell-hover);border-color:var(--shell-hover);box-shadow:0 7px 18px rgba(11,65,75,.25);transform:translateY(-1px)}
+.add-stock-button:active,.oem-add-button:active{transform:translateY(0);box-shadow:0 3px 9px rgba(11,65,75,.2)}
+@media(max-width:760px){.topbar{box-shadow:0 3px 14px rgba(8,36,42,.16)}.topbar .menu-btn{color:#fff;background:transparent;border:0}.inventory-welcome .add-stock-button,.inventory-welcome .oem-add-button{color:#fff;background:var(--shell);border-color:var(--shell)}}
