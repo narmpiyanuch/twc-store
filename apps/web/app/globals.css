@@ -65,7 +65,7 @@ html,body{background:var(--surface-alt)}
 .nav-caption{color:#929fa3}
 .side-nav button{color:#65757a}
 .side-nav button:hover{background:#eef8f8;color:var(--primary-dark);transform:none}
-.side-nav button.active{color:#fff;background:linear-gradient(110deg,#14b4b0 0%,#00706d 100%);box-shadow:0 5px 14px rgba(0,112,109,.2)}
+.side-nav button.active{color:#fff;background:linear-gradient(110deg,#078f8c 0%,#004f4d 100%);box-shadow:0 5px 14px rgba(0,79,77,.25)}
 .side-nav button.active svg{color:#fff}
 .database-status{border-top-color:var(--line);color:#148565}
 .database-status small{color:var(--muted)}
@@ -76,12 +76,12 @@ html,body{background:var(--surface-alt)}
 .topbar .icon-btn{color:#53666b;background:#fff;border-color:var(--line)}
 .topbar .icon-btn:hover{color:var(--primary-dark);background:#eef8f8}
 .sidebar .sidebar-close{color:#52666b;background:#f4f8f9;border-color:var(--line)}
-.add-stock-button,.oem-add-button,.save-btn{color:#fff;background:linear-gradient(110deg,#14b4b0 0%,#00706d 100%);border-color:transparent;box-shadow:0 5px 14px rgba(0,112,109,.18)}
-.add-stock-button:hover,.oem-add-button:hover,.save-btn:hover{background:linear-gradient(110deg,#0da5a2 0%,#005f5d 100%);border-color:transparent;box-shadow:0 7px 18px rgba(0,112,109,.24)}
+.add-stock-button,.oem-add-button,.save-btn{color:#fff;background:linear-gradient(110deg,#078f8c 0%,#004f4d 100%);border-color:transparent;box-shadow:0 5px 14px rgba(0,79,77,.23)}
+.add-stock-button:hover,.oem-add-button:hover,.save-btn:hover{background:linear-gradient(110deg,#067b78 0%,#003e3d 100%);border-color:transparent;box-shadow:0 7px 18px rgba(0,62,61,.28)}
 .panel,.inventory-summary article{border-color:#e0e8ea;box-shadow:var(--shadow)}
 .inventory-summary article:nth-child(1){border-top:3px solid #3279d8}
 .inventory-summary article:nth-child(2){border-top:3px solid #13aaa5}
 .inventory-summary article:nth-child(3){border-top:3px solid #7b55c7}
 .text-link,.eyebrow{color:var(--primary-dark)}
 .bottom-nav button.active{color:var(--primary-dark)}
-@media(max-width:760px){.topbar .menu-btn{color:#53666b;background:transparent}.inventory-welcome .add-stock-button,.inventory-welcome .oem-add-button{background:linear-gradient(110deg,#14b4b0 0%,#00706d 100%);border-color:transparent}}
+@media(max-width:760px){.topbar .menu-btn{color:#53666b;background:transparent}.inventory-welcome .add-stock-button,.inventory-welcome .oem-add-button{background:linear-gradient(110deg,#078f8c 0%,#004f4d 100%);border-color:transparent}}
