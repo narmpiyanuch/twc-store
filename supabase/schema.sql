@@ -100,3 +100,8 @@ grant select, insert, update, delete on public.oem_pack_prices to authenticated;
 grant select, insert, update, delete on public.delivery_settings to authenticated;
 insert into public.oem_pack_prices (id,size_label,tier_packs,price_per_pack) values ('350-100','350 ml',100,0),('350-250','350 ml',250,0),('500-600-100','500/600 ml',100,0),('500-600-250','500/600 ml',250,0),('1500-100','1,500 ml',100,0),('1500-250','1,500 ml',250,0) on conflict (id) do nothing;
 insert into public.delivery_settings (id,fuel_efficiency) values ('pickup',11.5) on conflict (id) do nothing;
+create table if not exists public.oem_price_logs (id text primary key, price_id text not null, size_label text not null, tier_packs integer not null, old_price numeric(12,2) not null, new_price numeric(12,2) not null, created_at timestamptz not null default now());
+alter table public.oem_price_logs enable row level security;
+drop policy if exists "Authenticated users can manage oem_price_logs" on public.oem_price_logs;
+create policy "Authenticated users can manage oem_price_logs" on public.oem_price_logs for all to authenticated using (true) with check (true);
+grant select, insert, update, delete on public.oem_price_logs to authenticated;

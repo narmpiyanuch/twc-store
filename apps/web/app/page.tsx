@@ -20,13 +20,14 @@ import {
   Users,
   X,
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import {
   deleteRecord,
   InventoryRecord,
   OemRecord,
   OemPackPrice,
+  OemPriceLog,
   DeliverySetting,
   readAll,
   saveMany,
@@ -53,8 +54,18 @@ const decimalOnly = (value: string) => {
   return `${whole || "0"}.${fractionParts.join("").slice(0, 4)}`;
 };
 const initialOemPrices: OemPackPrice[] = [
-  ["350", "350 ml"], ["500-600", "500/600 ml"], ["1500", "1,500 ml"],
-].flatMap(([key, sizeLabel]) => [100, 250].map((tierPacks) => ({ id: `${key}-${tierPacks}`, sizeLabel, tierPacks, pricePerPack: 0, updatedAt: new Date(0).toISOString() })));
+  ["350", "350 ml"],
+  ["500-600", "500/600 ml"],
+  ["1500", "1,500 ml"],
+].flatMap(([key, sizeLabel]) =>
+  [100, 250].map((tierPacks) => ({
+    id: `${key}-${tierPacks}`,
+    sizeLabel,
+    tierPacks,
+    pricePerPack: 0,
+    updatedAt: new Date(0).toISOString(),
+  })),
+);
 
 const initialInventory: InventoryRecord[] = [
   ...[350, 500, 600, 780, 1500].map((size, i) => ({
@@ -180,7 +191,9 @@ function StockCard({
         </div>
         <div className="inventory-copy">
           <strong>{item.name}</strong>
-          <small>{item.detail} · {item.id}</small>
+          <small>
+            {item.detail} · {item.id}
+          </small>
         </div>
         <div className="inventory-amount">
           <strong>{item.quantity.toLocaleString("th-TH")}</strong>
@@ -188,7 +201,14 @@ function StockCard({
         </div>
         <ChevronRight className="card-chevron" size={18} />
       </button>
-      <button type="button" className="stock-delete-button" onClick={onDelete} aria-label={`ลบ ${item.name}`}><Trash2 size={16} /></button>
+      <button
+        type="button"
+        className="stock-delete-button"
+        onClick={onDelete}
+        aria-label={`ลบ ${item.name}`}
+      >
+        <Trash2 size={16} />
+      </button>
     </article>
   );
 }
@@ -291,7 +311,16 @@ export default function Dashboard() {
   const [oemQuantity, setOemQuantity] = useState("");
   const [showOemForm, setShowOemForm] = useState(false);
   const [oemPrices, setOemPrices] = useState<OemPackPrice[]>(initialOemPrices);
-  const [deliveryDraft, setDeliveryDraft] = useState({ sizeLabel: "350 ml", distance: "", fuelEfficiency: "11.5", fuelPrice: "", packs: "100", trips: "1" });
+  const [oemPriceLogs, setOemPriceLogs] = useState<OemPriceLog[]>([]);
+  const priceBeforeEdit = useRef<Record<string, number>>({});
+  const [deliveryDraft, setDeliveryDraft] = useState({
+    sizeLabel: "350 ml",
+    distance: "",
+    fuelEfficiency: "11.5",
+    fuelPrice: "",
+    packs: "100",
+    trips: "1",
+  });
   const [databaseReady, setDatabaseReady] = useState(false);
   const [selectedStock, setSelectedStock] = useState<InventoryRecord | null>(
     null,
@@ -329,8 +358,9 @@ export default function Dashboard() {
     useState<SupplierRecord | null>(null);
   const [factoryToDelete, setFactoryToDelete] =
     useState<SupplierFactory | null>(null);
-  const [stockToDelete, setStockToDelete] =
-    useState<InventoryRecord | null>(null);
+  const [stockToDelete, setStockToDelete] = useState<InventoryRecord | null>(
+    null,
+  );
   const [oemToDelete, setOemToDelete] = useState<OemRecord | null>(null);
 
   useEffect(() => {
@@ -433,11 +463,21 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!session) return;
-    Promise.all([readAll<OemPackPrice>("oemPackPrices"), readAll<DeliverySetting>("deliverySettings")])
-      .then(([prices, settings]) => {
+    Promise.all([
+      readAll<OemPackPrice>("oemPackPrices"),
+      readAll<DeliverySetting>("deliverySettings"),
+      readAll<OemPriceLog>("oemPriceLogs"),
+    ])
+      .then(([prices, settings, logs]) => {
         if (prices.length) setOemPrices(prices);
-        if (settings[0]) setDeliveryDraft((value) => ({ ...value, fuelEfficiency: String(settings[0].fuelEfficiency) }));
-      }).catch(() => undefined);
+        if (settings[0])
+          setDeliveryDraft((value) => ({
+            ...value,
+            fuelEfficiency: String(settings[0].fuelEfficiency),
+          }));
+        setOemPriceLogs(logs);
+      })
+      .catch(() => undefined);
   }, [session]);
 
   const bottleSize = (item: InventoryRecord) =>
@@ -494,7 +534,10 @@ export default function Dashboard() {
   };
 
   const removeStock = async (item: InventoryRecord) => {
-    if (stockToDelete?.id !== item.id) { setStockToDelete(item); return; }
+    if (stockToDelete?.id !== item.id) {
+      setStockToDelete(item);
+      return;
+    }
     setInventory((items) => items.filter((entry) => entry.id !== item.id));
     await deleteRecord("inventory", item.id);
     setStockToDelete(null);
@@ -543,7 +586,10 @@ export default function Dashboard() {
   };
 
   const removeOem = async (item: OemRecord) => {
-    if (oemToDelete?.id !== item.id) { setOemToDelete(item); return; }
+    if (oemToDelete?.id !== item.id) {
+      setOemToDelete(item);
+      return;
+    }
     setOemItems((items) => items.filter((entry) => entry.id !== item.id));
     await deleteRecord("oem", item.id);
     setOemToDelete(null);
@@ -731,23 +777,62 @@ export default function Dashboard() {
   };
 
   const saveOemPrice = async (price: OemPackPrice, value: string) => {
-    const updated = { ...price, pricePerPack: Number(value) || 0, updatedAt: new Date().toISOString() };
-    setOemPrices((items) => items.map((item) => item.id === updated.id ? updated : item));
-    await saveRecord("oemPackPrices", updated);
+    const oldPrice = priceBeforeEdit.current[price.id] ?? price.pricePerPack;
+    const newPrice = Number(value) || 0;
+    if (oldPrice === newPrice) return;
+    const now = new Date().toISOString();
+    const updated = { ...price, pricePerPack: newPrice, updatedAt: now };
+    const log: OemPriceLog = {
+      id: crypto.randomUUID(),
+      priceId: price.id,
+      sizeLabel: price.sizeLabel,
+      tierPacks: price.tierPacks,
+      oldPrice,
+      newPrice,
+      createdAt: now,
+    };
+    setOemPrices((items) =>
+      items.map((item) => (item.id === updated.id ? updated : item)),
+    );
+    setOemPriceLogs((items) => [log, ...items]);
+    await Promise.all([
+      saveRecord("oemPackPrices", updated),
+      saveRecord("oemPriceLogs", log),
+    ]);
   };
   const saveFuelEfficiency = async () => {
     const fuelEfficiency = Number(deliveryDraft.fuelEfficiency);
     if (fuelEfficiency <= 0) return;
-    await saveRecord("deliverySettings", { id: "pickup", fuelEfficiency, updatedAt: new Date().toISOString() } as DeliverySetting);
+    await saveRecord("deliverySettings", {
+      id: "pickup",
+      fuelEfficiency,
+      updatedAt: new Date().toISOString(),
+    } as DeliverySetting);
   };
   const deliveryResult = useMemo(() => {
-    const packs = Number(deliveryDraft.packs) || 0, trips = Number(deliveryDraft.trips) || 0, distance = Number(deliveryDraft.distance) || 0, efficiency = Number(deliveryDraft.fuelEfficiency) || 0, fuelPrice = Number(deliveryDraft.fuelPrice) || 0;
+    const packs = Number(deliveryDraft.packs) || 0,
+      trips = Number(deliveryDraft.trips) || 0,
+      distance = Number(deliveryDraft.distance) || 0,
+      efficiency = Number(deliveryDraft.fuelEfficiency) || 0,
+      fuelPrice = Number(deliveryDraft.fuelPrice) || 0;
     const tier = packs >= 250 ? 250 : 100;
-    const base = oemPrices.find((item) => item.sizeLabel === deliveryDraft.sizeLabel && item.tierPacks === tier)?.pricePerPack ?? 0;
+    const base =
+      oemPrices.find(
+        (item) =>
+          item.sizeLabel === deliveryDraft.sizeLabel && item.tierPacks === tier,
+      )?.pricePerPack ?? 0;
     const liters = efficiency > 0 ? (distance * trips) / efficiency : 0;
     const fuelTotal = liters * fuelPrice;
     const fuelPerPack = packs > 0 ? fuelTotal / packs : 0;
-    return { tier, base, liters, fuelTotal, fuelPerPack, delivered: base + fuelPerPack, total: (base + fuelPerPack) * packs };
+    return {
+      tier,
+      base,
+      liters,
+      fuelTotal,
+      fuelPerPack,
+      delivered: base + fuelPerPack,
+      total: (base + fuelPerPack) * packs,
+    };
   }, [deliveryDraft, oemPrices]);
 
   const enterApp = async () => {
@@ -1136,10 +1221,203 @@ export default function Dashboard() {
           )}
 
           {active === "ราคา OEM" && (
-            <><section className="welcome inventory-welcome"><div><p className="eyebrow"><Calculator size={16} /> ราคา OEM</p><h1>ราคาต่อแพ็คและราคาจัดส่ง</h1><p>ดูเรทปัจจุบันและคำนวณค่าน้ำมันต่อแพ็คจากระยะทางไป–กลับ</p></div></section><section className="oem-pricing-layout">
-              <article className="panel oem-price-panel"><div className="section-heading"><div><h2>ราคาต่อแพ็คปัจจุบัน</h2><p>เรท 100 และ 250 แพ็ค</p></div></div><div className="oem-price-table"><div className="oem-price-head"><span>ขนาด</span><span>เรท 100</span><span>เรท 250</span></div>{["350 ml","500/600 ml","1,500 ml"].map((size) => <div className="oem-price-row" key={size}><strong>{size}</strong>{[100,250].map((tier) => { const price=oemPrices.find((item)=>item.sizeLabel===size&&item.tierPacks===tier)!; return <label key={tier}>฿<input aria-label={`${size} เรท ${tier} แพ็ค`} inputMode="decimal" value={price?.pricePerPack ?? 0} onChange={(event)=>setOemPrices((items)=>items.map((item)=>item.id===price.id?{...item,pricePerPack:Number(decimalOnly(event.target.value))}:item))} onBlur={(event)=>saveOemPrice(price,event.target.value)} /></label>})}</div>)}</div></article>
-              <article className="panel delivery-calculator"><div className="section-heading"><div><h2>คำนวณราคาไปส่ง</h2><p>รถกระบะ ค่าเริ่มต้น 11.5 กม./ลิตร</p></div></div><div className="delivery-form"><label>ขนาดสินค้า<select value={deliveryDraft.sizeLabel} onChange={(event)=>setDeliveryDraft((value)=>({...value,sizeLabel:event.target.value}))}><option>350 ml</option><option>500/600 ml</option><option>1,500 ml</option></select></label><label>ระยะทางไป–กลับ (กม.)<input inputMode="decimal" value={deliveryDraft.distance} onChange={(event)=>setDeliveryDraft((value)=>({...value,distance:decimalOnly(event.target.value)}))} placeholder="0" /></label><label>อัตราสิ้นเปลือง (กม./ลิตร)<input inputMode="decimal" value={deliveryDraft.fuelEfficiency} onChange={(event)=>setDeliveryDraft((value)=>({...value,fuelEfficiency:decimalOnly(event.target.value)}))} onBlur={saveFuelEfficiency} /></label><label>ราคาน้ำมัน (บาท/ลิตร)<input inputMode="decimal" value={deliveryDraft.fuelPrice} onChange={(event)=>setDeliveryDraft((value)=>({...value,fuelPrice:decimalOnly(event.target.value)}))} placeholder="0.00" /></label><label>จำนวนแพ็คที่จัดส่ง<input inputMode="numeric" value={deliveryDraft.packs} onChange={(event)=>setDeliveryDraft((value)=>({...value,packs:digitsOnly(event.target.value)}))} /></label><label>จำนวนเที่ยว<input inputMode="numeric" value={deliveryDraft.trips} onChange={(event)=>setDeliveryDraft((value)=>({...value,trips:digitsOnly(event.target.value)}))} /></label></div><div className="delivery-result"><div><span>เรทราคา</span><strong>{deliveryResult.tier} แพ็ค · ฿{deliveryResult.base.toFixed(2)}</strong></div><div><span>น้ำมันที่ใช้</span><strong>{deliveryResult.liters.toFixed(2)} ลิตร</strong></div><div><span>ค่าน้ำมันรวม</span><strong>฿{deliveryResult.fuelTotal.toFixed(2)}</strong></div><div><span>ค่าน้ำมันต่อแพ็ค</span><strong>฿{deliveryResult.fuelPerPack.toFixed(2)}</strong></div><div className="delivery-total"><span>ราคาพร้อมส่งต่อแพ็ค</span><strong>฿{deliveryResult.delivered.toFixed(2)}</strong></div><div><span>ยอดรวม</span><strong>฿{deliveryResult.total.toLocaleString("th-TH",{minimumFractionDigits:2,maximumFractionDigits:2})}</strong></div></div></article>
-            </section></>
+            <>
+              <section className="welcome inventory-welcome">
+                <div>
+                  <p className="eyebrow">
+                    <Calculator size={16} /> ราคา OEM
+                  </p>
+                  <h1>ราคาต่อแพ็คและราคาจัดส่ง</h1>
+                  <p>ดูเรทปัจจุบันและคำนวณค่าน้ำมันต่อแพ็คจากระยะทางไป–กลับ</p>
+                </div>
+              </section>
+              <section className="oem-pricing-layout">
+                <article className="panel oem-price-panel">
+                  <div className="section-heading">
+                    <div>
+                      <h2>ราคาต่อแพ็คปัจจุบัน</h2>
+                      <p>เรท 100 และ 250 แพ็ค</p>
+                    </div>
+                  </div>
+                  <div className="oem-price-table">
+                    <div className="oem-price-head">
+                      <span>ขนาด</span>
+                      <span>เรท 100</span>
+                      <span>เรท 250</span>
+                    </div>
+                    {["350 ml", "500/600 ml", "1,500 ml"].map((size) => (
+                      <div className="oem-price-row" key={size}>
+                        <strong>{size}</strong>
+                        {[100, 250].map((tier) => {
+                          const price = oemPrices.find(
+                            (item) =>
+                              item.sizeLabel === size &&
+                              item.tierPacks === tier,
+                          )!;
+                          return (
+                            <label key={tier}>
+                              ฿
+                              <input
+                                aria-label={`${size} เรท ${tier} แพ็ค`}
+                                inputMode="decimal"
+                                value={price?.pricePerPack ?? 0}
+                                onFocus={() => { priceBeforeEdit.current[price.id] = price.pricePerPack; }}
+                                onChange={(event) =>
+                                  setOemPrices((items) =>
+                                    items.map((item) =>
+                                      item.id === price.id
+                                        ? {
+                                            ...item,
+                                            pricePerPack: Number(
+                                              decimalOnly(event.target.value),
+                                            ),
+                                          }
+                                        : item,
+                                    ),
+                                  )
+                                }
+                                onBlur={(event) =>
+                                  saveOemPrice(price, event.target.value)
+                                }
+                              />
+                            </label>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="oem-price-history"><div className="section-heading"><div><h2>ประวัติการแก้ไขราคา</h2><p>บันทึกราคาเดิมและราคาใหม่</p></div><History size={18} /></div><div className="oem-price-log-list">{[...oemPriceLogs].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).map((log)=><article key={log.id}><span className="log-dot updated"/><div><strong>{log.sizeLabel} · เรท {log.tierPacks} แพ็ค</strong><p>฿{log.oldPrice.toFixed(2)} → ฿{log.newPrice.toFixed(2)}</p><small>{new Date(log.createdAt).toLocaleString("th-TH",{dateStyle:"medium",timeStyle:"short"})}</small></div></article>)}</div>{!oemPriceLogs.length&&<p className="empty-state">ยังไม่มีประวัติการแก้ไขราคา</p>}</div>
+                </article>
+                <article className="panel delivery-calculator">
+                  <div className="section-heading">
+                    <div>
+                      <h2>คำนวณราคาไปส่ง</h2>
+                      <p>รถกระบะ ค่าเริ่มต้น 11.5 กม./ลิตร</p>
+                    </div>
+                  </div>
+                  <div className="delivery-form">
+                    <label>
+                      ขนาดสินค้า
+                      <select
+                        value={deliveryDraft.sizeLabel}
+                        onChange={(event) =>
+                          setDeliveryDraft((value) => ({
+                            ...value,
+                            sizeLabel: event.target.value,
+                          }))
+                        }
+                      >
+                        <option>350 ml</option>
+                        <option>500/600 ml</option>
+                        <option>1,500 ml</option>
+                      </select>
+                    </label>
+                    <label>
+                      ระยะทางไป–กลับ (กม.)
+                      <input
+                        inputMode="decimal"
+                        value={deliveryDraft.distance}
+                        onChange={(event) =>
+                          setDeliveryDraft((value) => ({
+                            ...value,
+                            distance: decimalOnly(event.target.value),
+                          }))
+                        }
+                        placeholder="0"
+                      />
+                    </label>
+                    <label>
+                      อัตราสิ้นเปลือง (กม./ลิตร)
+                      <input
+                        inputMode="decimal"
+                        value={deliveryDraft.fuelEfficiency}
+                        onChange={(event) =>
+                          setDeliveryDraft((value) => ({
+                            ...value,
+                            fuelEfficiency: decimalOnly(event.target.value),
+                          }))
+                        }
+                        onBlur={saveFuelEfficiency}
+                      />
+                    </label>
+                    <label>
+                      ราคาน้ำมัน (บาท/ลิตร)
+                      <input
+                        inputMode="decimal"
+                        value={deliveryDraft.fuelPrice}
+                        onChange={(event) =>
+                          setDeliveryDraft((value) => ({
+                            ...value,
+                            fuelPrice: decimalOnly(event.target.value),
+                          }))
+                        }
+                        placeholder="0.00"
+                      />
+                    </label>
+                    <label>
+                      จำนวนแพ็คที่จัดส่ง
+                      <select
+                        value={deliveryDraft.packs}
+                        onChange={(event) =>
+                          setDeliveryDraft((value) => ({
+                            ...value,
+                            packs: event.target.value,
+                          }))
+                        }
+                      ><option value="100">100 แพ็ค</option><option value="250">250 แพ็ค</option></select>
+                    </label>
+                    <label>
+                      จำนวนเที่ยว
+                      <input
+                        inputMode="numeric"
+                        value={deliveryDraft.trips}
+                        onChange={(event) =>
+                          setDeliveryDraft((value) => ({
+                            ...value,
+                            trips: digitsOnly(event.target.value),
+                          }))
+                        }
+                      />
+                    </label>
+                  </div>
+                  <div className="delivery-result">
+                    <div>
+                      <span>เรทราคา</span>
+                      <strong>
+                        {deliveryResult.tier} แพ็ค · ฿
+                        {deliveryResult.base.toFixed(2)}
+                      </strong>
+                    </div>
+                    <div>
+                      <span>น้ำมันที่ใช้</span>
+                      <strong>{deliveryResult.liters.toFixed(2)} ลิตร</strong>
+                    </div>
+                    <div>
+                      <span>ค่าน้ำมันรวม</span>
+                      <strong>฿{deliveryResult.fuelTotal.toFixed(2)}</strong>
+                    </div>
+                    <div>
+                      <span>ค่าน้ำมันต่อแพ็ค</span>
+                      <strong>฿{deliveryResult.fuelPerPack.toFixed(2)}</strong>
+                    </div>
+                    <div className="delivery-total">
+                      <span>ราคาพร้อมส่งต่อแพ็ค</span>
+                      <strong>฿{deliveryResult.delivered.toFixed(2)}</strong>
+                    </div>
+                    <div>
+                      <span>ยอดรวม</span>
+                      <strong>
+                        ฿
+                        {deliveryResult.total.toLocaleString("th-TH", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </strong>
+                    </div>
+                  </div>
+                </article>
+              </section>
+            </>
           )}
 
           {active === "Supplier" && (
@@ -1411,7 +1689,9 @@ export default function Dashboard() {
                   inputMode="numeric"
                   pattern="[0-9]*"
                   value={editQuantity}
-                  onChange={(event) => setEditQuantity(digitsOnly(event.target.value))}
+                  onChange={(event) =>
+                    setEditQuantity(digitsOnly(event.target.value))
+                  }
                 />
                 <span>{selectedStock.unit}</span>
               </label>
@@ -1451,18 +1731,45 @@ export default function Dashboard() {
             <header>
               <div>
                 <small>ยืนยันการลบสต็อก</small>
-                <h2 id="confirm-stock-delete-title">ลบ {stockToDelete.name} หรือไม่?</h2>
-                <p id="confirm-stock-delete-description">{stockToDelete.detail} · {stockToDelete.quantity.toLocaleString("th-TH")} {stockToDelete.unit}</p>
+                <h2 id="confirm-stock-delete-title">
+                  ลบ {stockToDelete.name} หรือไม่?
+                </h2>
+                <p id="confirm-stock-delete-description">
+                  {stockToDelete.detail} ·{" "}
+                  {stockToDelete.quantity.toLocaleString("th-TH")}{" "}
+                  {stockToDelete.unit}
+                </p>
               </div>
-              <button type="button" onClick={() => setStockToDelete(null)} aria-label="ปิด"><X size={20} /></button>
+              <button
+                type="button"
+                onClick={() => setStockToDelete(null)}
+                aria-label="ปิด"
+              >
+                <X size={20} />
+              </button>
             </header>
             <div className="confirm-delete-copy">
               <Trash2 size={24} />
-              <p>รายการนี้จะถูกลบออกจากสต็อกและฐานข้อมูล Cloud การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+              <p>
+                รายการนี้จะถูกลบออกจากสต็อกและฐานข้อมูล Cloud
+                การดำเนินการนี้ไม่สามารถย้อนกลับได้
+              </p>
             </div>
             <footer>
-              <button type="button" className="cancel-btn" onClick={() => setStockToDelete(null)}>ยกเลิก</button>
-              <button type="button" className="delete-confirm-btn" onClick={() => removeStock(stockToDelete)}>ยืนยันการลบ</button>
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={() => setStockToDelete(null)}
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                className="delete-confirm-btn"
+                onClick={() => removeStock(stockToDelete)}
+              >
+                ยืนยันการลบ
+              </button>
             </footer>
           </section>
         </div>
@@ -1485,18 +1792,44 @@ export default function Dashboard() {
             <header>
               <div>
                 <small>ยืนยันการลบลูกค้า OEM</small>
-                <h2 id="confirm-oem-delete-title">ลบ {oemToDelete.name} หรือไม่?</h2>
-                <p id="confirm-oem-delete-description">จำนวนคงเหลือ {oemToDelete.quantity.toLocaleString("th-TH")} ห่อ</p>
+                <h2 id="confirm-oem-delete-title">
+                  ลบ {oemToDelete.name} หรือไม่?
+                </h2>
+                <p id="confirm-oem-delete-description">
+                  จำนวนคงเหลือ {oemToDelete.quantity.toLocaleString("th-TH")}{" "}
+                  ห่อ
+                </p>
               </div>
-              <button type="button" onClick={() => setOemToDelete(null)} aria-label="ปิด"><X size={20} /></button>
+              <button
+                type="button"
+                onClick={() => setOemToDelete(null)}
+                aria-label="ปิด"
+              >
+                <X size={20} />
+              </button>
             </header>
             <div className="confirm-delete-copy">
               <Trash2 size={24} />
-              <p>ข้อมูลลูกค้าและจำนวนสต็อก OEM จะถูกลบออกจากฐานข้อมูล Cloud การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+              <p>
+                ข้อมูลลูกค้าและจำนวนสต็อก OEM จะถูกลบออกจากฐานข้อมูล Cloud
+                การดำเนินการนี้ไม่สามารถย้อนกลับได้
+              </p>
             </div>
             <footer>
-              <button type="button" className="cancel-btn" onClick={() => setOemToDelete(null)}>ยกเลิก</button>
-              <button type="button" className="delete-confirm-btn" onClick={() => removeOem(oemToDelete)}>ยืนยันการลบ</button>
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={() => setOemToDelete(null)}
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                className="delete-confirm-btn"
+                onClick={() => removeOem(oemToDelete)}
+              >
+                ยืนยันการลบ
+              </button>
             </footer>
           </section>
         </div>
@@ -1687,7 +2020,9 @@ export default function Dashboard() {
                     inputMode="numeric"
                     pattern="[0-9]*"
                     value={oemQuantity}
-                    onChange={(event) => setOemQuantity(digitsOnly(event.target.value))}
+                    onChange={(event) =>
+                      setOemQuantity(digitsOnly(event.target.value))
+                    }
                     placeholder="0"
                     required
                   />
@@ -1954,20 +2289,43 @@ export default function Dashboard() {
             <header>
               <div>
                 <small>ยืนยันการลบโรงงาน</small>
-                <h2 id="confirm-factory-delete-title">ลบ {factoryToDelete.name} หรือไม่?</h2>
+                <h2 id="confirm-factory-delete-title">
+                  ลบ {factoryToDelete.name} หรือไม่?
+                </h2>
                 <p id="confirm-factory-delete-description">
-                  มีรายการขวด {suppliers.filter((item) => item.factoryId === factoryToDelete.id).length.toLocaleString("th-TH")} รายการ
+                  มีรายการขวด{" "}
+                  {suppliers
+                    .filter((item) => item.factoryId === factoryToDelete.id)
+                    .length.toLocaleString("th-TH")}{" "}
+                  รายการ
                 </p>
               </div>
-              <button onClick={() => setFactoryToDelete(null)} aria-label="ปิด"><X size={20} /></button>
+              <button onClick={() => setFactoryToDelete(null)} aria-label="ปิด">
+                <X size={20} />
+              </button>
             </header>
             <div className="confirm-delete-copy">
               <Trash2 size={24} />
-              <p>โรงงานและรายการขวดทั้งหมดภายในจะถูกลบออก ระบบจะบันทึกเหตุการณ์นี้ไว้ในประวัติการแก้ไข</p>
+              <p>
+                โรงงานและรายการขวดทั้งหมดภายในจะถูกลบออก
+                ระบบจะบันทึกเหตุการณ์นี้ไว้ในประวัติการแก้ไข
+              </p>
             </div>
             <footer>
-              <button type="button" className="cancel-btn" onClick={() => setFactoryToDelete(null)}>ยกเลิก</button>
-              <button type="button" className="delete-confirm-btn" onClick={() => removeFactory(factoryToDelete)}>ลบโรงงานและรายการขวด</button>
+              <button
+                type="button"
+                className="cancel-btn"
+                onClick={() => setFactoryToDelete(null)}
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                className="delete-confirm-btn"
+                onClick={() => removeFactory(factoryToDelete)}
+              >
+                ลบโรงงานและรายการขวด
+              </button>
             </footer>
           </section>
         </div>
