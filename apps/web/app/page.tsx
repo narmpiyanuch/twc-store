@@ -314,11 +314,10 @@ export default function Dashboard() {
   const [oemPriceLogs, setOemPriceLogs] = useState<OemPriceLog[]>([]);
   const priceBeforeEdit = useRef<Record<string, number>>({});
   const [deliveryDraft, setDeliveryDraft] = useState({
-    sizeLabel: "350 ml",
     distance: "",
     fuelEfficiency: "11.5",
     fuelPrice: "",
-    packs: "100",
+    packsPerTrip: "250",
     trips: "1",
   });
   const [databaseReady, setDatabaseReady] = useState(false);
@@ -810,30 +809,23 @@ export default function Dashboard() {
     } as DeliverySetting);
   };
   const deliveryResult = useMemo(() => {
-    const packs = Number(deliveryDraft.packs) || 0,
+    const packsPerTrip = Number(deliveryDraft.packsPerTrip) || 0,
       trips = Number(deliveryDraft.trips) || 0,
       distance = Number(deliveryDraft.distance) || 0,
       efficiency = Number(deliveryDraft.fuelEfficiency) || 0,
       fuelPrice = Number(deliveryDraft.fuelPrice) || 0;
-    const tier = packs >= 250 ? 250 : 100;
-    const base =
-      oemPrices.find(
-        (item) =>
-          item.sizeLabel === deliveryDraft.sizeLabel && item.tierPacks === tier,
-      )?.pricePerPack ?? 0;
     const liters = efficiency > 0 ? (distance * trips) / efficiency : 0;
     const fuelTotal = liters * fuelPrice;
-    const fuelPerPack = packs > 0 ? fuelTotal / packs : 0;
+    const totalPacks = packsPerTrip * trips;
+    const fuelPerPack = totalPacks > 0 ? fuelTotal / totalPacks : 0;
     return {
-      tier,
-      base,
+      packsPerTrip,
+      totalPacks,
       liters,
       fuelTotal,
       fuelPerPack,
-      delivered: base + fuelPerPack,
-      total: (base + fuelPerPack) * packs,
     };
-  }, [deliveryDraft, oemPrices]);
+  }, [deliveryDraft]);
 
   const enterApp = async () => {
     setAuthLoading(true);
@@ -1293,27 +1285,11 @@ export default function Dashboard() {
                 <article className="panel delivery-calculator">
                   <div className="section-heading">
                     <div>
-                      <h2>คำนวณราคาไปส่ง</h2>
-                      <p>รถกระบะ ค่าเริ่มต้น 11.5 กม./ลิตร</p>
+                      <h2>คำนวณค่าน้ำมันต่อแพ็ค</h2>
+                      <p>คำนวณจากจำนวนแพ็คที่รถขนส่งได้ต่อเที่ยว · ค่าเริ่มต้น 11.5 กม./ลิตร</p>
                     </div>
                   </div>
                   <div className="delivery-form">
-                    <label>
-                      ขนาดสินค้า
-                      <select
-                        value={deliveryDraft.sizeLabel}
-                        onChange={(event) =>
-                          setDeliveryDraft((value) => ({
-                            ...value,
-                            sizeLabel: event.target.value,
-                          }))
-                        }
-                      >
-                        <option>350 ml</option>
-                        <option>500/600 ml</option>
-                        <option>1,500 ml</option>
-                      </select>
-                    </label>
                     <label>
                       ระยะทางไป–กลับ (กม.)
                       <input
@@ -1357,16 +1333,18 @@ export default function Dashboard() {
                       />
                     </label>
                     <label>
-                      จำนวนแพ็คที่จัดส่ง
-                      <select
-                        value={deliveryDraft.packs}
+                      จำนวนแพ็คต่อเที่ยว
+                      <input
+                        inputMode="numeric"
+                        value={deliveryDraft.packsPerTrip}
                         onChange={(event) =>
                           setDeliveryDraft((value) => ({
                             ...value,
-                            packs: event.target.value,
+                            packsPerTrip: digitsOnly(event.target.value),
                           }))
                         }
-                      ><option value="100">100 แพ็ค</option><option value="250">250 แพ็ค</option></select>
+                        placeholder="250"
+                      />
                     </label>
                     <label>
                       จำนวนเที่ยว
@@ -1384,11 +1362,8 @@ export default function Dashboard() {
                   </div>
                   <div className="delivery-result">
                     <div>
-                      <span>เรทราคา</span>
-                      <strong>
-                        {deliveryResult.tier} แพ็ค · ฿
-                        {deliveryResult.base.toFixed(2)}
-                      </strong>
+                      <span>จำนวนแพ็คต่อเที่ยว</span>
+                      <strong>{deliveryResult.packsPerTrip.toLocaleString("th-TH")} แพ็ค</strong>
                     </div>
                     <div>
                       <span>น้ำมันที่ใช้</span>
@@ -1399,22 +1374,12 @@ export default function Dashboard() {
                       <strong>฿{deliveryResult.fuelTotal.toFixed(2)}</strong>
                     </div>
                     <div>
-                      <span>ค่าน้ำมันต่อแพ็ค</span>
-                      <strong>฿{deliveryResult.fuelPerPack.toFixed(2)}</strong>
+                      <span>จำนวนแพ็ครวมทุกเที่ยว</span>
+                      <strong>{deliveryResult.totalPacks.toLocaleString("th-TH")} แพ็ค</strong>
                     </div>
                     <div className="delivery-total">
-                      <span>ราคาพร้อมส่งต่อแพ็ค</span>
-                      <strong>฿{deliveryResult.delivered.toFixed(2)}</strong>
-                    </div>
-                    <div>
-                      <span>ยอดรวม</span>
-                      <strong>
-                        ฿
-                        {deliveryResult.total.toLocaleString("th-TH", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </strong>
+                      <span>ค่าน้ำมันต่อแพ็ค</span>
+                      <strong>฿{deliveryResult.fuelPerPack.toFixed(2)}</strong>
                     </div>
                   </div>
                 </article>
