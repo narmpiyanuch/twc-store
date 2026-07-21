@@ -54,3 +54,34 @@
 .add-stock-button:hover,.oem-add-button:hover{background:var(--shell-hover);border-color:var(--shell-hover);box-shadow:0 7px 18px rgba(11,65,75,.25);transform:translateY(-1px)}
 .add-stock-button:active,.oem-add-button:active{transform:translateY(0);box-shadow:0 3px 9px rgba(11,65,75,.2)}
 @media(max-width:760px){.topbar{box-shadow:0 3px 14px rgba(8,36,42,.16)}.topbar .menu-btn{color:#fff;background:transparent;border:0}.inventory-welcome{align-items:stretch;width:100%}.inventory-welcome>div{width:100%;min-width:0}.inventory-welcome .add-stock-button,.inventory-welcome .oem-add-button{color:#fff;background:var(--shell);border-color:var(--shell)}}
+
+/* Light teal dashboard theme */
+:root{--primary:#089b98;--primary-dark:#006d6b;--primary-soft:#e6f7f6;--surface-alt:#f4f8f9;--line:#dfe7e9;--shell:#079b98;--shell-hover:#00716f;--shell-text:#17272b;--shell-muted:#718186;--shadow:0 2px 8px rgba(25,48,54,.07)}
+html,body{background:var(--surface-alt)}
+.sidebar{background:#fff;border-right-color:var(--line);box-shadow:2px 0 12px rgba(25,48,54,.04)}
+.brand strong{color:var(--text)}
+.brand small{color:var(--muted)}
+.brand-logo{border-color:#dce6e8;box-shadow:0 3px 10px rgba(25,48,54,.08)}
+.nav-caption{color:#929fa3}
+.side-nav button{color:#65757a}
+.side-nav button:hover{background:#eef8f8;color:var(--primary-dark);transform:none}
+.side-nav button.active{color:#fff;background:linear-gradient(110deg,#14b4b0 0%,#00706d 100%);box-shadow:0 5px 14px rgba(0,112,109,.2)}
+.side-nav button.active svg{color:#fff}
+.database-status{border-top-color:var(--line);color:#148565}
+.database-status small{color:var(--muted)}
+.topbar{background:rgba(255,255,255,.96);border-bottom-color:var(--line);box-shadow:0 2px 10px rgba(25,48,54,.05)}
+.topbar-title strong{color:var(--text)}
+.topbar-title small,.save-state{color:var(--muted)}
+.save-state i{background:#29b982;box-shadow:0 0 0 3px #e1f6ee}
+.topbar .icon-btn{color:#53666b;background:#fff;border-color:var(--line)}
+.topbar .icon-btn:hover{color:var(--primary-dark);background:#eef8f8}
+.sidebar .sidebar-close{color:#52666b;background:#f4f8f9;border-color:var(--line)}
+.add-stock-button,.oem-add-button,.save-btn{color:#fff;background:linear-gradient(110deg,#14b4b0 0%,#00706d 100%);border-color:transparent;box-shadow:0 5px 14px rgba(0,112,109,.18)}
+.add-stock-button:hover,.oem-add-button:hover,.save-btn:hover{background:linear-gradient(110deg,#0da5a2 0%,#005f5d 100%);border-color:transparent;box-shadow:0 7px 18px rgba(0,112,109,.24)}
+.panel,.inventory-summary article{border-color:#e0e8ea;box-shadow:var(--shadow)}
+.inventory-summary article:nth-child(1){border-top:3px solid #3279d8}
+.inventory-summary article:nth-child(2){border-top:3px solid #13aaa5}
+.inventory-summary article:nth-child(3){border-top:3px solid #7b55c7}
+.text-link,.eyebrow{color:var(--primary-dark)}
+.bottom-nav button.active{color:var(--primary-dark)}
+@media(max-width:760px){.topbar .menu-btn{color:#53666b;background:transparent}.inventory-welcome .add-stock-button,.inventory-welcome .oem-add-button{background:linear-gradient(110deg,#14b4b0 0%,#00706d 100%);border-color:transparent}}
