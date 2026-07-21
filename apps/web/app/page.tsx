@@ -173,16 +173,16 @@ const initialOem: OemRecord[] = [
 
 function StockCard({
   item,
-  onOpen,
+  onEdit,
   onDelete,
 }: {
   item: InventoryRecord;
-  onOpen: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   return (
     <article className="inventory-card-shell">
-      <button className="inventory-card inventory-card-button" onClick={onOpen}>
+      <button className="inventory-card inventory-card-button" onClick={onEdit}>
         <div className="inventory-icon">
           {item.color ? (
             <span className="color-swatch" style={{ background: item.color }} />
@@ -202,14 +202,14 @@ function StockCard({
         </div>
         <ChevronRight className="card-chevron" size={18} />
       </button>
-      <button
-        type="button"
-        className="stock-delete-button"
-        onClick={onDelete}
-        aria-label={`ลบ ${item.name}`}
-      >
-        <Trash2 size={16} />
-      </button>
+      <div className="supplier-actions stock-card-actions">
+        <button type="button" onClick={onEdit} aria-label={`แก้ไข ${item.name}`}>
+          <Pencil size={16} />
+        </button>
+        <button type="button" className="danger" onClick={onDelete} aria-label={`ลบ ${item.name}`}>
+          <Trash2 size={16} />
+        </button>
+      </div>
     </article>
   );
 }
@@ -288,21 +288,14 @@ function OemList({
             <strong>{item.quantity.toLocaleString("th-TH")}</strong>
             <span>ห่อ</span>
           </p>
-          <button
-            className="oem-edit-button"
-            type="button"
-            onClick={() => onEdit(item)}
-            aria-label={`แก้ไข ${item.name}`}
-          >
-            <Pencil size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={() => onRemove(item)}
-            aria-label={`ลบ ${item.name}`}
-          >
-            <Trash2 size={16} />
-          </button>
+          <div className="supplier-actions oem-actions">
+            <button type="button" onClick={() => onEdit(item)} aria-label={`แก้ไข ${item.name}`}>
+              <Pencil size={16} />
+            </button>
+            <button type="button" className="danger" onClick={() => onRemove(item)} aria-label={`ลบ ${item.name}`}>
+              <Trash2 size={16} />
+            </button>
+          </div>
         </article>
       ))}
     </div>
@@ -1120,7 +1113,7 @@ export default function Dashboard() {
                         <StockCard
                           key={item.id}
                           item={item}
-                          onOpen={() => openStock(item)}
+                          onEdit={() => openStock(item)}
                           onDelete={() => setStockToDelete(item)}
                         />
                       ))}
@@ -1147,7 +1140,7 @@ export default function Dashboard() {
                       <StockCard
                         key={item.id}
                         item={item}
-                        onOpen={() => openStock(item)}
+                        onEdit={() => openStock(item)}
                         onDelete={() => setStockToDelete(item)}
                       />
                     ))}
@@ -1178,7 +1171,7 @@ export default function Dashboard() {
                       <StockCard
                         key={item.id}
                         item={item}
-                        onOpen={() => openStock(item)}
+                        onEdit={() => openStock(item)}
                         onDelete={() => setStockToDelete(item)}
                       />
                     ))}
@@ -1209,7 +1202,7 @@ export default function Dashboard() {
                       <StockCard
                         key={item.id}
                         item={item}
-                        onOpen={() => openStock(item)}
+                        onEdit={() => openStock(item)}
                         onDelete={() => setStockToDelete(item)}
                       />
                     ))}
