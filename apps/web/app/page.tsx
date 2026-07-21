@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Boxes, ChevronRight, Database, GlassWater, Home, Menu, Package, Palette, Plus, Trash2, Users, X } from "lucide-react";
+import { Boxes, ChevronRight, Database, GlassWater, Home, Package, Palette, Plus, Trash2, Users, X } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { deleteRecord, InventoryRecord, OemRecord, readAll, saveMany, saveRecord } from "@/lib/database";
 
@@ -54,7 +54,6 @@ function OemList({ items, onRemove }: { items: OemRecord[]; onRemove: (id: strin
 }
 
 export default function Dashboard() {
-  const [mobileMenu, setMobileMenu] = useState(false);
   const [active, setActive] = useState("ภาพรวม");
   const [brandTab, setBrandTab] = useState("เนบิวลา");
   const [inventory, setInventory] = useState<InventoryRecord[]>(initialInventory);
@@ -128,19 +127,15 @@ export default function Dashboard() {
     await deleteRecord("oem", id);
   };
 
-  const goTo = (label: string) => { setActive(label); setMobileMenu(false); };
+  const goTo = (label: string) => setActive(label);
 
   return <div className="app-shell">
-    <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
-      <div className="brand"><Image className="brand-logo" src="/insight-taweechai-logo.jpg" alt="โลโก้ทวีชัยน้ำดื่ม" width={42} height={42} priority /><div><strong>Insight Taweechai</strong><small>Stock management</small></div><button className="icon-btn sidebar-close" onClick={() => setMobileMenu(false)} aria-label="ปิดเมนู"><X size={20} /></button></div>
+    <aside className="sidebar">
+      <div className="brand"><Image className="brand-logo" src="/insight-taweechai-logo.jpg" alt="โลโก้ทวีชัยน้ำดื่ม" width={42} height={42} priority /><div><strong>Insight Taweechai</strong><small>Stock management</small></div></div>
       <nav className="side-nav" aria-label="เมนูหลัก"><p className="nav-caption">เมนูหลัก</p>{navItems.map(({ label, icon: Icon }) => <button key={label} className={active === label ? "active" : ""} onClick={() => goTo(label)}><Icon size={20} /><span>{label}</span></button>)}</nav>
       <div className="database-status"><Database size={16} /><div><strong>{databaseReady ? "ฐานข้อมูลพร้อมใช้งาน" : "กำลังเปิดฐานข้อมูล"}</strong><small>บันทึกอัตโนมัติบนอุปกรณ์นี้</small></div></div>
     </aside>
-    {mobileMenu && <button className="scrim" aria-label="ปิดเมนู" onClick={() => setMobileMenu(false)} />}
-
     <main className="main">
-      <header className="topbar simple-topbar"><button className="icon-btn menu-btn" onClick={() => setMobileMenu(true)} aria-label="เปิดเมนู"><Menu size={23} /></button><div className="topbar-title"><strong>{active}</strong><small>{active === "ภาพรวม" ? "สรุปข้อมูลล่าสุด" : active === "สต็อก" ? "ขวดและบรรจุภัณฑ์" : "สต็อกแยกตามลูกค้า"}</small></div><span className="save-state"><i /> บันทึกอัตโนมัติ</span></header>
-
       <div className="content inventory-page">
         {active === "ภาพรวม" && <>
           <section className="welcome inventory-welcome"><div><p className="eyebrow"><Home size={16} /> ภาพรวม Insight Taweechai</p><h1>สรุปคลังสินค้าปัจจุบัน</h1><p>ตัวเลขทั้งหมดคำนวณจากข้อมูลที่บันทึกในฐานข้อมูลบนอุปกรณ์นี้</p></div></section>
