@@ -264,9 +264,11 @@ function SummaryCards({
 
 function OemList({
   items,
+  onEdit,
   onRemove,
 }: {
   items: OemRecord[];
+  onEdit: (item: OemRecord) => void;
   onRemove: (item: OemRecord) => void;
 }) {
   return (
@@ -286,6 +288,14 @@ function OemList({
             <strong>{item.quantity.toLocaleString("th-TH")}</strong>
             <span>ห่อ</span>
           </p>
+          <button
+            className="oem-edit-button"
+            type="button"
+            onClick={() => onEdit(item)}
+            aria-label={`แก้ไข ${item.name}`}
+          >
+            <Pencil size={16} />
+          </button>
           <button
             type="button"
             onClick={() => onRemove(item)}
@@ -313,6 +323,7 @@ export default function Dashboard() {
   const [oemName, setOemName] = useState("");
   const [oemQuantity, setOemQuantity] = useState("");
   const [showOemForm, setShowOemForm] = useState(false);
+  const [editingOem, setEditingOem] = useState<OemRecord | null>(null);
   const [oemPrices, setOemPrices] = useState<OemPackPrice[]>(initialOemPrices);
   const [oemPriceLogs, setOemPriceLogs] = useState<OemPriceLog[]>([]);
   const priceBeforeEdit = useRef<Record<string, number>>({});
@@ -576,21 +587,44 @@ export default function Dashboard() {
     setShowAddStock(false);
   };
 
-  const addOem = async (event: FormEvent) => {
+  const closeOemForm = () => {
+    setShowOemForm(false);
+    setEditingOem(null);
+    setOemName("");
+    setOemQuantity("");
+  };
+
+  const openAddOem = () => {
+    setEditingOem(null);
+    setOemName("");
+    setOemQuantity("");
+    setShowOemForm(true);
+  };
+
+  const openEditOem = (item: OemRecord) => {
+    setEditingOem(item);
+    setOemName(item.name);
+    setOemQuantity(String(item.quantity));
+    setShowOemForm(true);
+  };
+
+  const saveOem = async (event: FormEvent) => {
     event.preventDefault();
     const quantity = Number(oemQuantity);
     if (!oemName.trim() || !Number.isFinite(quantity) || quantity < 0) return;
     const item: OemRecord = {
-      id: crypto.randomUUID(),
+      id: editingOem?.id ?? crypto.randomUUID(),
       name: oemName.trim(),
       quantity,
       updatedAt: new Date().toISOString(),
     };
-    setOemItems((items) => [...items, item]);
+    setOemItems((items) =>
+      editingOem
+        ? items.map((entry) => (entry.id === item.id ? item : entry))
+        : [...items, item],
+    );
     await saveRecord("oem", item);
-    setOemName("");
-    setOemQuantity("");
-    setShowOemForm(false);
+    closeOemForm();
   };
 
   const removeOem = async (item: OemRecord) => {
@@ -1199,7 +1233,7 @@ export default function Dashboard() {
                 </div>
                 <button
                   className="secondary-btn oem-add-button"
-                  onClick={() => setShowOemForm(true)}
+                  onClick={openAddOem}
                 >
                   <Plus size={18} /> เพิ่มลูกค้า OEM
                 </button>
@@ -1215,7 +1249,11 @@ export default function Dashboard() {
                       </p>
                     </div>
                   </div>
-                  <OemList items={oemItems} onRemove={setOemToDelete} />
+                  <OemList
+                    items={oemItems}
+                    onEdit={openEditOem}
+                    onRemove={setOemToDelete}
+                  />
                   {!oemItems.length && (
                     <p className="empty-state">
                       ยังไม่มีข้อมูล OEM กด “เพิ่มลูกค้า OEM” เพื่อเริ่มต้น
@@ -2063,7 +2101,7 @@ export default function Dashboard() {
           className="modal-backdrop"
           role="presentation"
           onMouseDown={(event) =>
-            event.target === event.currentTarget && setShowOemForm(false)
+            event.target === event.currentTarget && closeOemForm()
           }
         >
           <section
@@ -2075,14 +2113,16 @@ export default function Dashboard() {
             <header>
               <div>
                 <small>ลูกค้า OEM</small>
-                <h2 id="add-oem-title">เพิ่มลูกค้า OEM</h2>
-                <p>กรอกชื่อและจำนวนห่อในสต็อก</p>
+                <h2 id="add-oem-title">
+                  {editingOem ? "แก้ไขลูกค้า OEM" : "เพิ่มลูกค้า OEM"}
+                </h2>
+                <p>{editingOem ? "แก้ไขชื่อและจำนวนห่อในสต็อก" : "กรอกชื่อและจำนวนห่อในสต็อก"}</p>
               </div>
-              <button onClick={() => setShowOemForm(false)} aria-label="ปิด">
+              <button onClick={closeOemForm} aria-label="ปิด">
                 <X size={20} />
               </button>
             </header>
-            <form onSubmit={addOem}>
+            <form onSubmit={saveOem}>
               <div className="form-grid single-column">
                 <label>
                   ชื่อ OEM
@@ -2112,12 +2152,12 @@ export default function Dashboard() {
                 <button
                   type="button"
                   className="cancel-btn"
-                  onClick={() => setShowOemForm(false)}
+                  onClick={closeOemForm}
                 >
                   ยกเลิก
                 </button>
                 <button type="submit" className="save-btn">
-                  บันทึกลูกค้า
+                  {editingOem ? "บันทึกการแก้ไข" : "บันทึกลูกค้า"}
                 </button>
               </footer>
             </form>
