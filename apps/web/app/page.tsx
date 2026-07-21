@@ -239,7 +239,7 @@ function OemList({
   onRemove,
 }: {
   items: OemRecord[];
-  onRemove: (id: string) => void;
+  onRemove: (item: OemRecord) => void;
 }) {
   return (
     <div className="oem-list">
@@ -259,7 +259,8 @@ function OemList({
             <span>ห่อ</span>
           </p>
           <button
-            onClick={() => onRemove(item.id)}
+            type="button"
+            onClick={() => onRemove(item)}
             aria-label={`ลบ ${item.name}`}
           >
             <Trash2 size={16} />
@@ -321,6 +322,7 @@ export default function Dashboard() {
     useState<SupplierFactory | null>(null);
   const [stockToDelete, setStockToDelete] =
     useState<InventoryRecord | null>(null);
+  const [oemToDelete, setOemToDelete] = useState<OemRecord | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -522,9 +524,11 @@ export default function Dashboard() {
     setShowOemForm(false);
   };
 
-  const removeOem = async (id: string) => {
-    setOemItems((items) => items.filter((item) => item.id !== id));
-    await deleteRecord("oem", id);
+  const removeOem = async (item: OemRecord) => {
+    if (oemToDelete?.id !== item.id) { setOemToDelete(item); return; }
+    setOemItems((items) => items.filter((entry) => entry.id !== item.id));
+    await deleteRecord("oem", item.id);
+    setOemToDelete(null);
   };
 
   const addFactory = async (event: FormEvent) => {
@@ -1082,7 +1086,7 @@ export default function Dashboard() {
                       </p>
                     </div>
                   </div>
-                  <OemList items={oemItems} onRemove={removeOem} />
+                  <OemList items={oemItems} onRemove={setOemToDelete} />
                   {!oemItems.length && (
                     <p className="empty-state">
                       ยังไม่มีข้อมูล OEM กด “เพิ่มลูกค้า OEM” เพื่อเริ่มต้น
@@ -1414,6 +1418,40 @@ export default function Dashboard() {
             <footer>
               <button type="button" className="cancel-btn" onClick={() => setStockToDelete(null)}>ยกเลิก</button>
               <button type="button" className="delete-confirm-btn" onClick={() => removeStock(stockToDelete)}>ยืนยันการลบ</button>
+            </footer>
+          </section>
+        </div>
+      )}
+      {oemToDelete && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && setOemToDelete(null)
+          }
+        >
+          <section
+            className="stock-modal confirm-delete-modal"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="confirm-oem-delete-title"
+            aria-describedby="confirm-oem-delete-description"
+          >
+            <header>
+              <div>
+                <small>ยืนยันการลบลูกค้า OEM</small>
+                <h2 id="confirm-oem-delete-title">ลบ {oemToDelete.name} หรือไม่?</h2>
+                <p id="confirm-oem-delete-description">จำนวนคงเหลือ {oemToDelete.quantity.toLocaleString("th-TH")} ห่อ</p>
+              </div>
+              <button type="button" onClick={() => setOemToDelete(null)} aria-label="ปิด"><X size={20} /></button>
+            </header>
+            <div className="confirm-delete-copy">
+              <Trash2 size={24} />
+              <p>ข้อมูลลูกค้าและจำนวนสต็อก OEM จะถูกลบออกจากฐานข้อมูล Cloud การดำเนินการนี้ไม่สามารถย้อนกลับได้</p>
+            </div>
+            <footer>
+              <button type="button" className="cancel-btn" onClick={() => setOemToDelete(null)}>ยกเลิก</button>
+              <button type="button" className="delete-confirm-btn" onClick={() => removeOem(oemToDelete)}>ยืนยันการลบ</button>
             </footer>
           </section>
         </div>
