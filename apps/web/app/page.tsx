@@ -858,10 +858,12 @@ export default function Dashboard() {
         <section className="auth-card">
           <Image
             className="auth-logo"
-            src="/insight-taweechai-logo.jpg"
+            src="/insight-taweechai-logo-hd.png"
             alt="Taweechai Drinking Water"
-            width={180}
-            height={100}
+            width={1776}
+            height={887}
+            sizes="(max-width: 760px) 310px, 350px"
+            quality={100}
             priority
           />
           <button
