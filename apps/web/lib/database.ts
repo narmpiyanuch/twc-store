@@ -15,7 +15,7 @@ export type SupplierRecord = {
   id: string;
   factory: string;
   sizeMl: number;
-  pricePerPack: number;
+  pricePerBottle: number;
   bottlesPerPack: number;
   updatedAt: string;
 };
