@@ -12,6 +12,7 @@ import {
   History,
   Home,
   LogOut,
+  MoreHorizontal,
   Package,
   Palette,
   Pencil,
@@ -303,6 +304,8 @@ export default function Dashboard() {
   const [authLoading, setAuthLoading] = useState(true);
   const [authMessage, setAuthMessage] = useState("");
   const [active, setActive] = useState("ภาพรวม");
+  const [showMobileMore, setShowMobileMore] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [brandTab, setBrandTab] = useState("เนบิวลา");
   const [inventory, setInventory] =
     useState<InventoryRecord[]>(initialInventory);
@@ -1608,7 +1611,7 @@ export default function Dashboard() {
         </div>
       </main>
       <nav className="bottom-nav compact-nav" aria-label="เมนูมือถือ">
-        {navItems.map(({ label, icon: Icon }) => (
+        {navItems.slice(0, 3).map(({ label, icon: Icon }) => (
           <button
             key={label}
             className={active === label ? "active" : ""}
@@ -1618,7 +1621,108 @@ export default function Dashboard() {
             <span>{label}</span>
           </button>
         ))}
+        <button
+          className={active === "ราคา OEM" || active === "Supplier" ? "active" : ""}
+          onClick={() => setShowMobileMore(true)}
+          aria-haspopup="dialog"
+          aria-expanded={showMobileMore}
+        >
+          <MoreHorizontal size={21} />
+          <span>เพิ่มเติม</span>
+        </button>
       </nav>
+      {showMobileMore && (
+        <div
+          className="mobile-more-backdrop"
+          role="presentation"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && setShowMobileMore(false)
+          }
+        >
+          <section
+            className="mobile-more-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="mobile-more-title"
+          >
+            <header>
+              <div>
+                <small>เมนู</small>
+                <h2 id="mobile-more-title">เพิ่มเติม</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowMobileMore(false)}
+                aria-label="ปิดเมนูเพิ่มเติม"
+              >
+                <X size={20} />
+              </button>
+            </header>
+            <div className="mobile-more-list">
+              {navItems.slice(3).map(({ label, icon: Icon }) => (
+                <button
+                  key={label}
+                  type="button"
+                  className={active === label ? "active" : ""}
+                  onClick={() => {
+                    goTo(label);
+                    setShowMobileMore(false);
+                  }}
+                >
+                  <span className="mobile-more-icon"><Icon size={21} /></span>
+                  <span><strong>{label}</strong><small>เปิดเมนู {label}</small></span>
+                  <ChevronRight size={18} />
+                </button>
+              ))}
+              <button
+                type="button"
+                className="mobile-logout-item"
+                onClick={() => {
+                  setShowMobileMore(false);
+                  setShowLogoutConfirm(true);
+                }}
+              >
+                <span className="mobile-more-icon"><LogOut size={21} /></span>
+                <span><strong>ออกจากระบบ</strong><small>กลับไปยังหน้าเข้าสู่ระบบ</small></span>
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+      {showLogoutConfirm && (
+        <div
+          className="modal-backdrop"
+          role="presentation"
+          onMouseDown={(event) =>
+            event.target === event.currentTarget && setShowLogoutConfirm(false)
+          }
+        >
+          <section
+            className="stock-modal confirm-delete-modal"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="logout-confirm-title"
+          >
+            <header>
+              <div>
+                <small>ยืนยันการออกจากระบบ</small>
+                <h2 id="logout-confirm-title">ต้องการออกจากระบบหรือไม่?</h2>
+                <p>คุณสามารถกด Insight Taweechai เพื่อเข้าใช้งานใหม่ได้</p>
+              </div>
+              <button type="button" onClick={() => setShowLogoutConfirm(false)} aria-label="ปิด">
+                <X size={20} />
+              </button>
+            </header>
+            <footer>
+              <button className="cancel-btn" type="button" onClick={() => setShowLogoutConfirm(false)}>ยกเลิก</button>
+              <button className="delete-confirm-btn" type="button" onClick={() => supabase.auth.signOut()}>
+                <LogOut size={16} /> ออกจากระบบ
+              </button>
+            </footer>
+          </section>
+        </div>
+      )}
       {selectedStock && (
         <div
           className="modal-backdrop"
