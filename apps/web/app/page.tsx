@@ -367,10 +367,16 @@ export default function Dashboard() {
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
+      if (data.session) setActive("ภาพรวม");
       setSession(data.session);
       setAuthLoading(false);
     });
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (event === "SIGNED_IN" || event === "SIGNED_OUT") {
+        setActive("ภาพรวม");
+        setShowMobileMore(false);
+        setShowLogoutConfirm(false);
+      }
       setSession(nextSession);
       setAuthLoading(false);
     });
@@ -833,6 +839,9 @@ export default function Dashboard() {
   const enterApp = async () => {
     setAuthLoading(true);
     setAuthMessage("");
+    setActive("ภาพรวม");
+    setShowMobileMore(false);
+    setShowLogoutConfirm(false);
     const result = await supabase.auth.signInAnonymously();
     setAuthLoading(false);
     if (result.error)
