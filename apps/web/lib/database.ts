@@ -1,91 +1,55 @@
-export type InventoryRecord = {
-  id: string;
-  category: "bottle" | "cap" | "tank" | "glass";
-  brand?: string;
-  name: string;
-  detail: string;
-  quantity: number;
-  unit: string;
-  color?: string;
-};
+import { supabase } from "@/lib/supabase";
 
+export type InventoryRecord = { id: string; category: "bottle" | "cap" | "tank" | "glass"; brand?: string; name: string; detail: string; quantity: number; unit: string; color?: string };
 export type OemRecord = { id: string; name: string; quantity: number; updatedAt: string };
-
-export type SupplierRecord = {
-  id: string;
-  factoryId: string;
-  sizeMl: number;
-  pricePerBottle: number;
-  bottlesPerPack: number;
-  updatedAt: string;
-};
-
+export type SupplierRecord = { id: string; factoryId: string; sizeMl: number; pricePerBottle: number; bottlesPerPack: number; updatedAt: string };
 export type SupplierFactory = { id: string; name: string; createdAt: string; updatedAt: string };
-
-export type SupplierLog = {
-  id: string;
-  supplierId: string;
-  factory: string;
-  action: "created" | "updated" | "deleted";
-  summary: string;
-  createdAt: string;
-};
-
+export type SupplierLog = { id: string; supplierId: string; factory: string; action: "created" | "updated" | "deleted"; summary: string; createdAt: string };
 export type StoreName = "inventory" | "oem" | "suppliers" | "supplierFactories" | "supplierLogs";
 
-const DB_NAME = "insight-taweechai";
-const DB_VERSION = 3;
+const tables: Record<StoreName, string> = {
+  inventory: "inventory",
+  oem: "oem",
+  suppliers: "suppliers",
+  supplierFactories: "supplier_factories",
+  supplierLogs: "supplier_logs",
+};
 
-const openDatabase = () => new Promise<IDBDatabase>((resolve, reject) => {
-  const request = indexedDB.open(DB_NAME, DB_VERSION);
-  request.onupgradeneeded = () => {
-    const db = request.result;
-    if (!db.objectStoreNames.contains("inventory")) db.createObjectStore("inventory", { keyPath: "id" });
-    if (!db.objectStoreNames.contains("oem")) db.createObjectStore("oem", { keyPath: "id" });
-    if (!db.objectStoreNames.contains("suppliers")) db.createObjectStore("suppliers", { keyPath: "id" });
-    if (!db.objectStoreNames.contains("supplierFactories")) db.createObjectStore("supplierFactories", { keyPath: "id" });
-    if (!db.objectStoreNames.contains("supplierLogs")) db.createObjectStore("supplierLogs", { keyPath: "id" });
-  };
-  request.onsuccess = () => resolve(request.result);
-  request.onerror = () => reject(request.error);
-});
+const toDatabase = (store: StoreName, value: unknown) => {
+  const item = value as Record<string, unknown>;
+  if (store === "oem") return { id: item.id, name: item.name, quantity: item.quantity, updated_at: item.updatedAt };
+  if (store === "suppliers") return { id: item.id, factory_id: item.factoryId, size_ml: item.sizeMl, price_per_bottle: item.pricePerBottle, bottles_per_pack: item.bottlesPerPack, updated_at: item.updatedAt };
+  if (store === "supplierFactories") return { id: item.id, name: item.name, created_at: item.createdAt, updated_at: item.updatedAt };
+  if (store === "supplierLogs") return { id: item.id, supplier_id: item.supplierId, factory: item.factory, action: item.action, summary: item.summary, created_at: item.createdAt };
+  return item;
+};
 
-export async function readAll<T>(storeName: StoreName): Promise<T[]> {
-  const db = await openDatabase();
-  return new Promise((resolve, reject) => {
-    const request = db.transaction(storeName, "readonly").objectStore(storeName).getAll();
-    request.onsuccess = () => resolve(request.result as T[]);
-    request.onerror = () => reject(request.error);
-  });
+const fromDatabase = (store: StoreName, value: Record<string, unknown>) => {
+  if (store === "oem") return { id: value.id, name: value.name, quantity: value.quantity, updatedAt: value.updated_at };
+  if (store === "suppliers") return { id: value.id, factoryId: value.factory_id, sizeMl: value.size_ml, pricePerBottle: Number(value.price_per_bottle), bottlesPerPack: value.bottles_per_pack, updatedAt: value.updated_at };
+  if (store === "supplierFactories") return { id: value.id, name: value.name, createdAt: value.created_at, updatedAt: value.updated_at };
+  if (store === "supplierLogs") return { id: value.id, supplierId: value.supplier_id, factory: value.factory, action: value.action, summary: value.summary, createdAt: value.created_at };
+  return value;
+};
+
+export async function readAll<T>(store: StoreName): Promise<T[]> {
+  const { data, error } = await supabase.from(tables[store]).select("*");
+  if (error) throw error;
+  return (data ?? []).map(value => fromDatabase(store, value)) as T[];
 }
 
-export async function saveRecord<T>(storeName: StoreName, value: T): Promise<void> {
-  const db = await openDatabase();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(storeName, "readwrite");
-    transaction.objectStore(storeName).put(value);
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-  });
+export async function saveRecord<T>(store: StoreName, value: T): Promise<void> {
+  const { error } = await supabase.from(tables[store]).upsert(toDatabase(store, value));
+  if (error) throw error;
 }
 
-export async function saveMany<T>(storeName: StoreName, values: T[]): Promise<void> {
-  const db = await openDatabase();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(storeName, "readwrite");
-    const store = transaction.objectStore(storeName);
-    values.forEach(value => store.put(value));
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-  });
+export async function saveMany<T>(store: StoreName, values: T[]): Promise<void> {
+  if (!values.length) return;
+  const { error } = await supabase.from(tables[store]).upsert(values.map(value => toDatabase(store, value)));
+  if (error) throw error;
 }
 
-export async function deleteRecord(storeName: StoreName, id: string): Promise<void> {
-  const db = await openDatabase();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(storeName, "readwrite");
-    transaction.objectStore(storeName).delete(id);
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
-  });
+export async function deleteRecord(store: StoreName, id: string): Promise<void> {
+  const { error } = await supabase.from(tables[store]).delete().eq("id", id);
+  if (error) throw error;
 }
