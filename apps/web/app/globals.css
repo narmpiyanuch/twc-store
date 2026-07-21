@@ -223,6 +223,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .side-nav button{height:48px;margin:3px 0;padding:0 14px;border-radius:12px;gap:12px;color:#5f7277;font-weight:650}
 .side-nav button svg{width:20px;height:20px}.side-nav button:hover{background:#f0f6f6;color:#29464b}
 .side-nav button.active{color:var(--primary-dark);background:linear-gradient(90deg,#def3f1,#ebf7f6);box-shadow:inset 3px 0 0 var(--primary)}
+.side-nav button svg,.side-nav button.active svg{color:currentColor;stroke:currentColor;opacity:1}
 .database-status{margin:16px 4px 0;padding:16px 8px 0}.database-status strong{font-size:11px}.database-status small{font-size:9px}
 .logout-button{width:38px;height:38px;flex-basis:38px;border-radius:10px}
 
