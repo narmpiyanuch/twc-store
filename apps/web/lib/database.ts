@@ -1,6 +1,6 @@
 export type InventoryRecord = {
   id: string;
-  category: "bottle" | "packaging";
+  category: "bottle" | "cap" | "tank" | "glass";
   brand?: string;
   name: string;
   detail: string;

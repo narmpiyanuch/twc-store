@@ -12,16 +12,16 @@ const navItems = [
 ];
 
 const initialInventory: InventoryRecord[] = [
-  ...[350, 500, 600, 780, 1500].map((size, i) => ({ id: `NEB-${size}`, category: "bottle" as const, brand: "เนบิวลา", name: `${size.toLocaleString()} ml`, detail: "ขวดเปล่า เนบิวลา", quantity: [120, 86, 245, 54, 42][i], unit: "ลัง" })),
-  ...[350, 500, 600, 1500].map((size, i) => ({ id: `PP-${size}`, category: "bottle" as const, brand: "พีพี", name: `${size.toLocaleString()} ml`, detail: "ขวดเปล่า พีพี", quantity: [98, 67, 132, 38][i], unit: "ลัง" })),
-  { id: "CAP-BLUE", category: "packaging", name: "ฝาสีฟ้า", detail: "ฝาขวดน้ำดื่ม", quantity: 32, unit: "ลัง", color: "#54a9cb" },
-  { id: "CAP-WHITE", category: "packaging", name: "ฝาสีขาว", detail: "ฝาขวดน้ำดื่ม", quantity: 18, unit: "ลัง", color: "#e8ecec" },
-  { id: "CAP-PINK", category: "packaging", name: "ฝาสีชมพู", detail: "ฝาขวดน้ำดื่ม", quantity: 9, unit: "ลัง", color: "#ee9fb2" },
-  { id: "TANK-W18", category: "packaging", name: "ถังขาว 18 ลิตร", detail: "ถังน้ำดื่มหมุนเวียน", quantity: 76, unit: "ถัง" },
-  { id: "TANK-CLEAR-A", category: "packaging", name: "ถังใส แบบ A", detail: "ถังใสทรงกลม", quantity: 48, unit: "ถัง" },
-  { id: "TANK-CLEAR-B", category: "packaging", name: "ถังใส แบบ B", detail: "ถังใสมีหูจับ", quantity: 35, unit: "ถัง" },
-  { id: "CUP", category: "packaging", name: "แก้วน้ำ", detail: "แก้วพลาสติกพร้อมซีล", quantity: 160, unit: "ลัง" },
-  { id: "GLASS-CRATE", category: "packaging", name: "ลังน้ำแก้ว", detail: "ลังสำหรับขวดแก้ว", quantity: 64, unit: "ลัง" },
+  ...[350, 500, 600, 780, 1500].map((size, i) => ({ id: `NEB-${size}`, category: "bottle" as const, brand: "เนบิวลา", name: `${size.toLocaleString()} ml`, detail: "ขวดเปล่า เนบิวลา", quantity: [120, 86, 245, 54, 42][i], unit: "ห่อ" })),
+  ...[350, 500, 600, 1500].map((size, i) => ({ id: `PP-${size}`, category: "bottle" as const, brand: "พีพี", name: `${size.toLocaleString()} ml`, detail: "ขวดเปล่า พีพี", quantity: [98, 67, 132, 38][i], unit: "ห่อ" })),
+  { id: "CAP-BLUE", category: "cap", name: "ฝาสีฟ้า", detail: "ฝาขวดน้ำดื่ม", quantity: 32, unit: "ลัง", color: "#54a9cb" },
+  { id: "CAP-WHITE", category: "cap", name: "ฝาสีขาว", detail: "ฝาขวดน้ำดื่ม", quantity: 18, unit: "ลัง", color: "#e8ecec" },
+  { id: "CAP-PINK", category: "cap", name: "ฝาสีชมพู", detail: "ฝาขวดน้ำดื่ม", quantity: 9, unit: "ลัง", color: "#ee9fb2" },
+  { id: "TANK-W18", category: "tank", name: "ถังขาว 18 ลิตร", detail: "ถังน้ำดื่มหมุนเวียน", quantity: 76, unit: "ถัง" },
+  { id: "TANK-CLEAR-A", category: "tank", name: "ถังใส แบบ A", detail: "ถังใสทรงกลม", quantity: 48, unit: "ถัง" },
+  { id: "TANK-CLEAR-B", category: "tank", name: "ถังใส แบบ B", detail: "ถังใสมีหูจับ", quantity: 35, unit: "ถัง" },
+  { id: "CUP", category: "glass", name: "แก้วน้ำ", detail: "แก้วพลาสติกพร้อมซีล", quantity: 160, unit: "ลัง" },
+  { id: "GLASS-CRATE", category: "glass", name: "ลังน้ำแก้ว", detail: "ลังสำหรับขวดแก้ว", quantity: 64, unit: "ลัง" },
 ];
 
 const initialOem: OemRecord[] = [
@@ -40,7 +40,7 @@ function StockCard({ item, onOpen }: { item: InventoryRecord; onOpen: () => void
 
 function SummaryCards({ bottleTotal, capTotal, oemTotal }: { bottleTotal: number; capTotal: number; oemTotal: number }) {
   return <section className="inventory-summary" aria-label="สรุปสต็อก">
-    <article><span className="summary-icon blue"><GlassWater /></span><div><small>ขวดทุกแบรนด์</small><strong>{bottleTotal.toLocaleString("th-TH")} <em>ลัง</em></strong></div></article>
+    <article><span className="summary-icon blue"><GlassWater /></span><div><small>ขวดทุกแบรนด์</small><strong>{bottleTotal.toLocaleString("th-TH")} <em>ห่อ</em></strong></div></article>
     <article><span className="summary-icon teal"><Palette /></span><div><small>ฝาขวดทุกสี</small><strong>{capTotal.toLocaleString("th-TH")} <em>ลัง</em></strong></div></article>
     <article><span className="summary-icon violet"><Users /></span><div><small>ขวดของ OEM</small><strong>{oemTotal.toLocaleString("th-TH")} <em>ขวด</em></strong></div></article>
   </section>;
@@ -66,22 +66,33 @@ export default function Dashboard() {
   const [selectedStock, setSelectedStock] = useState<InventoryRecord | null>(null);
   const [editQuantity, setEditQuantity] = useState("");
   const [showAddStock, setShowAddStock] = useState(false);
-  const [newStock, setNewStock] = useState({ name: "", detail: "", quantity: "", unit: "ลัง", category: "packaging", brand: "เนบิวลา" });
+  const [newStock, setNewStock] = useState({ name: "", detail: "", quantity: "", unit: "ลัง", category: "cap", brand: "เนบิวลา" });
 
   useEffect(() => {
     const hydrate = async () => {
       const [storedInventory, storedOem] = await Promise.all([readAll<InventoryRecord>("inventory"), readAll<OemRecord>("oem")]);
-      if (storedInventory.length) setInventory(storedInventory); else await saveMany("inventory", initialInventory);
+      if (storedInventory.length) {
+        const migrated = storedInventory.map(item => {
+          const legacyCategory = item.category as string;
+          const category = legacyCategory === "packaging" ? (item.id.startsWith("CAP") ? "cap" : item.id.startsWith("TANK") ? "tank" : "glass") : item.category;
+          return { ...item, category, unit: category === "bottle" ? "ห่อ" : item.unit } as InventoryRecord;
+        });
+        setInventory(migrated); await saveMany("inventory", migrated);
+      } else await saveMany("inventory", initialInventory);
       if (storedOem.length) setOemItems(storedOem); else await saveMany("oem", initialOem);
       setDatabaseReady(true);
     };
     hydrate().catch(() => setDatabaseReady(true));
   }, []);
 
-  const bottles = inventory.filter(item => item.category === "bottle");
-  const packaging = inventory.filter(item => item.category === "packaging");
+  const bottleSize = (item: InventoryRecord) => Number(item.id.match(/(\d+)/)?.[1] ?? 99999);
+  const bottles = inventory.filter(item => item.category === "bottle").sort((a, b) => bottleSize(a) - bottleSize(b));
+  const caps = inventory.filter(item => item.category === "cap");
+  const tanks = inventory.filter(item => item.category === "tank");
+  const glassItems = inventory.filter(item => item.category === "glass");
+  const packaging = [...caps, ...tanks, ...glassItems];
   const bottleTotal = bottles.reduce((sum, item) => sum + item.quantity, 0);
-  const capTotal = packaging.filter(item => item.id.startsWith("CAP")).reduce((sum, item) => sum + item.quantity, 0);
+  const capTotal = caps.reduce((sum, item) => sum + item.quantity, 0);
   const oemTotal = oemItems.reduce((sum, item) => sum + item.quantity, 0);
   const latestOem = useMemo(() => [...oemItems].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 4), [oemItems]);
 
@@ -97,9 +108,9 @@ export default function Dashboard() {
 
   const addStock = async (event: FormEvent) => {
     event.preventDefault();
-    const record: InventoryRecord = { id: `CUSTOM-${crypto.randomUUID()}`, category: newStock.category as "bottle" | "packaging", brand: newStock.category === "bottle" ? newStock.brand : undefined, name: newStock.name.trim(), detail: newStock.detail.trim() || "รายการสต็อกเพิ่มเติม", quantity: Math.max(0, Number(newStock.quantity) || 0), unit: newStock.unit.trim() || "ชิ้น" };
+    const record: InventoryRecord = { id: `CUSTOM-${crypto.randomUUID()}`, category: newStock.category as InventoryRecord["category"], brand: newStock.category === "bottle" ? newStock.brand : undefined, name: newStock.name.trim(), detail: newStock.detail.trim() || "รายการสต็อกเพิ่มเติม", quantity: Math.max(0, Number(newStock.quantity) || 0), unit: newStock.category === "bottle" ? "ห่อ" : newStock.unit.trim() || "ชิ้น" };
     setInventory(items => [...items, record]); await saveRecord("inventory", record);
-    setNewStock({ name: "", detail: "", quantity: "", unit: "ลัง", category: "packaging", brand: "เนบิวลา" }); setShowAddStock(false);
+    setNewStock({ name: "", detail: "", quantity: "", unit: "ลัง", category: "cap", brand: "เนบิวลา" }); setShowAddStock(false);
   };
 
   const addOem = async (event: FormEvent) => {
@@ -135,7 +146,7 @@ export default function Dashboard() {
           <section className="welcome inventory-welcome"><div><p className="eyebrow"><Home size={16} /> ภาพรวม Insight Taweechai</p><h1>สรุปคลังสินค้าปัจจุบัน</h1><p>ตัวเลขทั้งหมดคำนวณจากข้อมูลที่บันทึกในฐานข้อมูลบนอุปกรณ์นี้</p></div></section>
           <SummaryCards bottleTotal={bottleTotal} capTotal={capTotal} oemTotal={oemTotal} />
           <section className="overview-grid">
-            <article className="panel overview-panel"><div className="section-heading"><div><h2>ขวดแยกตามแบรนด์</h2><p>จำนวนคงเหลือปัจจุบัน</p></div><button className="text-link" onClick={() => goTo("สต็อก")}>ไปที่สต็อก <ChevronRight size={16} /></button></div><div className="brand-overview"><div><span>เนบิวลา</span><strong>{bottles.filter(item => item.brand === "เนบิวลา").reduce((sum,item) => sum + item.quantity, 0).toLocaleString("th-TH")} ลัง</strong></div><div><span>พีพี</span><strong>{bottles.filter(item => item.brand === "พีพี").reduce((sum,item) => sum + item.quantity, 0).toLocaleString("th-TH")} ลัง</strong></div><div><span>บรรจุภัณฑ์และภาชนะ</span><strong>{packaging.length} รายการ</strong></div></div></article>
+            <article className="panel overview-panel"><div className="section-heading"><div><h2>ขวดแยกตามแบรนด์</h2><p>จำนวนคงเหลือปัจจุบัน</p></div><button className="text-link" onClick={() => goTo("สต็อก")}>ไปที่สต็อก <ChevronRight size={16} /></button></div><div className="brand-overview"><div><span>เนบิวลา</span><strong>{bottles.filter(item => item.brand === "เนบิวลา").reduce((sum,item) => sum + item.quantity, 0).toLocaleString("th-TH")} ห่อ</strong></div><div><span>พีพี</span><strong>{bottles.filter(item => item.brand === "พีพี").reduce((sum,item) => sum + item.quantity, 0).toLocaleString("th-TH")} ห่อ</strong></div><div><span>สต็อกกลุ่มอื่น</span><strong>{packaging.length} รายการ</strong></div></div></article>
             <article className="panel overview-panel"><div className="section-heading"><div><h2>OEM อัปเดตล่าสุด</h2><p>ลูกค้าในฐานข้อมูล {oemItems.length} ราย</p></div><button className="text-link" onClick={() => goTo("ลูกค้า OEM")}>ดูทั้งหมด <ChevronRight size={16} /></button></div><div className="attention-list">{latestOem.map(item => <div key={item.id}><span className="oem-avatar">{item.name.slice(0,2).toUpperCase()}</span><p><strong>{item.name}</strong><small>{new Date(item.updatedAt).toLocaleDateString("th-TH")}</small></p><em>{item.quantity.toLocaleString("th-TH")} ขวด</em></div>)}</div></article>
           </section>
         </>}
@@ -145,7 +156,9 @@ export default function Dashboard() {
           <SummaryCards bottleTotal={bottleTotal} capTotal={capTotal} oemTotal={oemTotal} />
           <div className="inventory-main-column">
             <section className="panel inventory-section"><div className="section-heading"><div><h2>สต็อกขวดน้ำ</h2><p>แยกตามยี่ห้อและขนาด</p></div><span className="updated-chip">บันทึกอัตโนมัติ</span></div><div className="brand-tabs" role="tablist">{["เนบิวลา","พีพี"].map(brand => <button key={brand} role="tab" aria-selected={brandTab === brand} className={brandTab === brand ? "active" : ""} onClick={() => setBrandTab(brand)}>{brand}</button>)}</div><div className="inventory-cards bottle-grid">{bottles.filter(item => item.brand === brandTab).map(item => <StockCard key={item.id} item={item} onOpen={() => openStock(item)} />)}</div></section>
-            <section className="panel inventory-section"><div className="section-heading"><div><h2>บรรจุภัณฑ์และภาชนะ</h2><p>ฝาขวด ถัง แก้ว และลังน้ำแก้ว</p></div><button className="text-link" onClick={() => setShowAddStock(true)}><Plus size={16} /> เพิ่มสต็อก</button></div><div className="inventory-cards packaging-grid">{packaging.map(item => <StockCard key={item.id} item={item} onOpen={() => openStock(item)} />)}</div></section>
+            <section className="panel inventory-section"><div className="section-heading"><div><h2>สต็อกฝาขวด</h2><p>จำนวนฝาแยกตามสี หน่วยเป็นลัง</p></div><button className="text-link" onClick={() => { setNewStock(value => ({...value, category:"cap"})); setShowAddStock(true); }}><Plus size={16} /> เพิ่มฝา</button></div><div className="inventory-cards packaging-grid">{caps.map(item => <StockCard key={item.id} item={item} onOpen={() => openStock(item)} />)}</div></section>
+            <section className="panel inventory-section"><div className="section-heading"><div><h2>สต็อกถังน้ำ</h2><p>ถังขาว 18 ลิตรและถังใส</p></div><button className="text-link" onClick={() => { setNewStock(value => ({...value, category:"tank", unit:"ถัง"})); setShowAddStock(true); }}><Plus size={16} /> เพิ่มถัง</button></div><div className="inventory-cards packaging-grid">{tanks.map(item => <StockCard key={item.id} item={item} onOpen={() => openStock(item)} />)}</div></section>
+            <section className="panel inventory-section"><div className="section-heading"><div><h2>แก้วและลังน้ำแก้ว</h2><p>อุปกรณ์สำหรับน้ำดื่มบรรจุแก้ว</p></div><button className="text-link" onClick={() => { setNewStock(value => ({...value, category:"glass", unit:"ลัง"})); setShowAddStock(true); }}><Plus size={16} /> เพิ่มรายการ</button></div><div className="inventory-cards packaging-grid">{glassItems.map(item => <StockCard key={item.id} item={item} onOpen={() => openStock(item)} />)}</div></section>
           </div>
         </>}
 
@@ -160,6 +173,6 @@ export default function Dashboard() {
     </main>
     <nav className="bottom-nav compact-nav" aria-label="เมนูมือถือ">{navItems.map(({ label, icon: Icon }) => <button key={label} className={active === label ? "active" : ""} onClick={() => goTo(label)}><Icon size={21} /><span>{label}</span></button>)}</nav>
     {selectedStock && <div className="modal-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && setSelectedStock(null)}><section className="stock-modal" role="dialog" aria-modal="true" aria-labelledby="stock-modal-title"><header><div><small>ปรับจำนวนสต็อก</small><h2 id="stock-modal-title">{selectedStock.name}</h2><p>{selectedStock.detail} · {selectedStock.id}</p></div><button onClick={() => setSelectedStock(null)} aria-label="ปิด"><X size={20} /></button></header><div className="quantity-editor"><button onClick={() => adjustDraft(-1)} aria-label="ลดจำนวน">−</button><label>จำนวนคงเหลือ<input type="number" min="0" value={editQuantity} onChange={event => setEditQuantity(event.target.value)} /><span>{selectedStock.unit}</span></label><button onClick={() => adjustDraft(1)} aria-label="เพิ่มจำนวน">+</button></div><footer><button className="cancel-btn" onClick={() => setSelectedStock(null)}>ยกเลิก</button><button className="save-btn" onClick={saveQuantity}>บันทึกจำนวน</button></footer></section></div>}
-    {showAddStock && <div className="modal-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && setShowAddStock(false)}><section className="stock-modal add-stock-modal" role="dialog" aria-modal="true" aria-labelledby="add-stock-title"><header><div><small>สร้างรายการใหม่</small><h2 id="add-stock-title">เพิ่มสต็อก</h2><p>กรอกรายละเอียดและจำนวนเริ่มต้น</p></div><button onClick={() => setShowAddStock(false)} aria-label="ปิด"><X size={20} /></button></header><form onSubmit={addStock}><div className="form-grid"><label>ประเภท<select value={newStock.category} onChange={event => setNewStock(value => ({...value,category:event.target.value}))}><option value="packaging">บรรจุภัณฑ์/ภาชนะ</option><option value="bottle">ขวดน้ำ</option></select></label>{newStock.category === "bottle" && <label>ยี่ห้อ<select value={newStock.brand} onChange={event => setNewStock(value => ({...value,brand:event.target.value}))}><option>เนบิวลา</option><option>พีพี</option></select></label>}<label>ชื่อรายการ<input required value={newStock.name} onChange={event => setNewStock(value => ({...value,name:event.target.value}))} placeholder="เช่น ฝาสีเขียว" /></label><label>รายละเอียด<input value={newStock.detail} onChange={event => setNewStock(value => ({...value,detail:event.target.value}))} placeholder="รายละเอียดเพิ่มเติม" /></label><label>จำนวนเริ่มต้น<input required type="number" min="0" value={newStock.quantity} onChange={event => setNewStock(value => ({...value,quantity:event.target.value}))} placeholder="0" /></label><label>หน่วย<input required value={newStock.unit} onChange={event => setNewStock(value => ({...value,unit:event.target.value}))} placeholder="ลัง" /></label></div><footer><button type="button" className="cancel-btn" onClick={() => setShowAddStock(false)}>ยกเลิก</button><button type="submit" className="save-btn">เพิ่มสต็อก</button></footer></form></section></div>}
+    {showAddStock && <div className="modal-backdrop" role="presentation" onMouseDown={event => event.target === event.currentTarget && setShowAddStock(false)}><section className="stock-modal add-stock-modal" role="dialog" aria-modal="true" aria-labelledby="add-stock-title"><header><div><small>สร้างรายการใหม่</small><h2 id="add-stock-title">เพิ่มสต็อก</h2><p>กรอกรายละเอียดและจำนวนเริ่มต้น</p></div><button onClick={() => setShowAddStock(false)} aria-label="ปิด"><X size={20} /></button></header><form onSubmit={addStock}><div className="form-grid"><label>ประเภท<select value={newStock.category} onChange={event => setNewStock(value => ({...value,category:event.target.value,unit:event.target.value === "bottle" ? "ห่อ" : event.target.value === "tank" ? "ถัง" : "ลัง"}))}><option value="bottle">ขวดน้ำ</option><option value="cap">ฝาขวด</option><option value="tank">ถังน้ำ</option><option value="glass">แก้ว/ลังน้ำแก้ว</option></select></label>{newStock.category === "bottle" && <label>ยี่ห้อ<select value={newStock.brand} onChange={event => setNewStock(value => ({...value,brand:event.target.value}))}><option>เนบิวลา</option><option>พีพี</option></select></label>}<label>ชื่อรายการ<input required value={newStock.name} onChange={event => setNewStock(value => ({...value,name:event.target.value}))} placeholder="เช่น ฝาสีเขียว" /></label><label>รายละเอียด<input value={newStock.detail} onChange={event => setNewStock(value => ({...value,detail:event.target.value}))} placeholder="รายละเอียดเพิ่มเติม" /></label><label>จำนวนเริ่มต้น<input required type="number" min="0" value={newStock.quantity} onChange={event => setNewStock(value => ({...value,quantity:event.target.value}))} placeholder="0" /></label><label>หน่วย<input required disabled={newStock.category === "bottle"} value={newStock.category === "bottle" ? "ห่อ" : newStock.unit} onChange={event => setNewStock(value => ({...value,unit:event.target.value}))} placeholder="ลัง" /></label></div><footer><button type="button" className="cancel-btn" onClick={() => setShowAddStock(false)}>ยกเลิก</button><button type="submit" className="save-btn">เพิ่มสต็อก</button></footer></form></section></div>}
   </div>;
 }
