@@ -1,4 +1,4 @@
-# Taweechai Store
+# Insight Taweechai
 
 Responsive POS and production inventory prototype for a drinking-water manufacturer supporting both house-brand and OEM products.
 

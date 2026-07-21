@@ -1,5 +1,5 @@
 {
-  "name": "taweechai-store",
+  "name": "insight-taweechai",
   "private": true,
   "version": "0.1.0",
   "workspaces": ["apps/*"],
