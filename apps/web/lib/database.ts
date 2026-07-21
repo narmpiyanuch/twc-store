@@ -13,12 +13,14 @@ export type OemRecord = { id: string; name: string; quantity: number; updatedAt:
 
 export type SupplierRecord = {
   id: string;
-  factory: string;
+  factoryId: string;
   sizeMl: number;
   pricePerBottle: number;
   bottlesPerPack: number;
   updatedAt: string;
 };
+
+export type SupplierFactory = { id: string; name: string; createdAt: string; updatedAt: string };
 
 export type SupplierLog = {
   id: string;
@@ -29,10 +31,10 @@ export type SupplierLog = {
   createdAt: string;
 };
 
-export type StoreName = "inventory" | "oem" | "suppliers" | "supplierLogs";
+export type StoreName = "inventory" | "oem" | "suppliers" | "supplierFactories" | "supplierLogs";
 
 const DB_NAME = "insight-taweechai";
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 const openDatabase = () => new Promise<IDBDatabase>((resolve, reject) => {
   const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -41,6 +43,7 @@ const openDatabase = () => new Promise<IDBDatabase>((resolve, reject) => {
     if (!db.objectStoreNames.contains("inventory")) db.createObjectStore("inventory", { keyPath: "id" });
     if (!db.objectStoreNames.contains("oem")) db.createObjectStore("oem", { keyPath: "id" });
     if (!db.objectStoreNames.contains("suppliers")) db.createObjectStore("suppliers", { keyPath: "id" });
+    if (!db.objectStoreNames.contains("supplierFactories")) db.createObjectStore("supplierFactories", { keyPath: "id" });
     if (!db.objectStoreNames.contains("supplierLogs")) db.createObjectStore("supplierLogs", { keyPath: "id" });
   };
   request.onsuccess = () => resolve(request.result);
