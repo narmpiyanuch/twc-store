@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Insight Taweechai — ระบบจัดการสต็อกน้ำดื่ม",
+  title: "Taweechai — ระบบจัดการสต็อกน้ำดื่ม",
   description: "POS, stock และการผลิตสำหรับธุรกิจน้ำดื่ม",
-  applicationName: "Insight Taweechai",
+  applicationName: "Taweechai",
   icons: {
     icon: [
       {

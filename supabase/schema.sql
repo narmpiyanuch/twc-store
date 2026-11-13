@@ -13,8 +13,15 @@ create table if not exists public.oem (
   id text primary key,
   name text not null,
   quantity integer not null default 0 check (quantity >= 0),
+  size_ml text check (size_ml in ('350','500','600','1500')),
+  price_per_pack numeric(12,2) not null default 0 check (price_per_pack >= 0),
+  fulfillment_type text not null default 'pickup' check (fulfillment_type in ('delivery','pickup')),
   updated_at timestamptz not null default now()
 );
+
+alter table public.oem add column if not exists price_per_pack numeric(12,2) not null default 0 check (price_per_pack >= 0);
+alter table public.oem add column if not exists fulfillment_type text not null default 'pickup' check (fulfillment_type in ('delivery','pickup'));
+alter table public.oem add column if not exists size_ml text check (size_ml in ('350','500','600','1500'));
 
 create table if not exists public.supplier_factories (
   id text primary key,
@@ -83,9 +90,9 @@ insert into public.inventory (id,category,brand,name,detail,quantity,unit,color)
 ('GLASS-CRATE','glass',null,'ลังน้ำแก้ว','ลังสำหรับขวดแก้ว',64,'ลัง',null)
 on conflict (id) do nothing;
 
-insert into public.oem (id,name,quantity,updated_at) values
-('oem-evergreen','Evergreen Hotel',12500,'2026-07-21T00:00:00.000Z'),
-('oem-siam','Siam Wellness',8200,'2026-07-21T00:00:00.000Z')
+insert into public.oem (id,name,quantity,price_per_pack,fulfillment_type,updated_at) values
+('oem-evergreen','Evergreen Hotel',0,35,'delivery','2026-07-21T00:00:00.000Z'),
+('oem-siam','Siam Wellness',0,33,'pickup','2026-07-21T00:00:00.000Z')
 on conflict (id) do nothing;
 
 create table if not exists public.oem_pack_prices (id text primary key, size_label text not null, tier_packs integer not null check (tier_packs in (100,250)), price_per_pack numeric(12,2) not null default 0 check (price_per_pack >= 0), updated_at timestamptz not null default now(), unique(size_label,tier_packs));
@@ -105,3 +112,23 @@ alter table public.oem_price_logs enable row level security;
 drop policy if exists "Authenticated users can manage oem_price_logs" on public.oem_price_logs;
 create policy "Authenticated users can manage oem_price_logs" on public.oem_price_logs for all to authenticated using (true) with check (true);
 grant select, insert, update, delete on public.oem_price_logs to authenticated;
+
+create table if not exists public.productions (
+  id text primary key,
+  product_type text not null check (product_type in ('bottled','glass')),
+  brand text,
+  size_ml text,
+  output_quantity integer not null default 0 check (output_quantity >= 0),
+  output_unit text not null,
+  materials jsonb not null default '[]'::jsonb,
+  note text not null default '',
+  status text not null default 'active' check (status in ('active','cancelled')),
+  produced_at timestamptz not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  revisions jsonb not null default '[]'::jsonb
+);
+alter table public.productions enable row level security;
+drop policy if exists "Authenticated users can manage productions" on public.productions;
+create policy "Authenticated users can manage productions" on public.productions for all to authenticated using (true) with check (true);
+grant select, insert, update, delete on public.productions to authenticated;
