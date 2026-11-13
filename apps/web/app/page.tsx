@@ -188,6 +188,7 @@ const initialOem: OemRecord[] = [
     name: "Evergreen Hotel",
     sizeMl: "350",
     pricePerPack: 35,
+    productionRate: 0,
     fulfillmentType: "delivery",
     updatedAt: "2026-07-21T00:00:00.000Z",
   },
@@ -196,6 +197,7 @@ const initialOem: OemRecord[] = [
     name: "Siam Wellness",
     sizeMl: "500",
     pricePerPack: 33,
+    productionRate: 0,
     fulfillmentType: "pickup",
     updatedAt: "2026-07-21T00:00:00.000Z",
   },
@@ -394,6 +396,7 @@ function OemTable({
               <th>ชื่อยี่ห้อน้ำ</th>
               <th>ขนาด (มล.)</th>
               <th>ราคาต่อแพ็ค</th>
+              <th>เรทผลิต</th>
               <th>ประเภทจัดส่ง</th>
               <th className="oem-action-heading">Action</th>
             </tr>
@@ -411,6 +414,7 @@ function OemTable({
                 </td>
                 <td data-label="ขนาด (มล.)"><strong>{item.sizeMl || "—"}</strong></td>
                 <td data-label="ราคาต่อแพ็ค"><strong className="oem-table-price">฿{item.pricePerPack.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></td>
+                <td data-label="เรทผลิต"><strong>{item.productionRate.toLocaleString("th-TH")}</strong></td>
                 <td data-label="ประเภทจัดส่ง">
                   <span className={`fulfillment-badge ${item.fulfillmentType}`}>
                     {item.fulfillmentType === "delivery" ? <Truck size={13} /> : <Package size={13} />}
@@ -462,6 +466,7 @@ export default function Dashboard() {
   const [oemName, setOemName] = useState("");
   const [oemSizeMl, setOemSizeMl] = useState("350");
   const [oemPricePerPack, setOemPricePerPack] = useState("");
+  const [oemProductionRate, setOemProductionRate] = useState("");
   const [oemFulfillmentType, setOemFulfillmentType] = useState<"delivery" | "pickup">("pickup");
   const [showOemForm, setShowOemForm] = useState(false);
   const [editingOem, setEditingOem] = useState<OemRecord | null>(null);
@@ -959,6 +964,7 @@ export default function Dashboard() {
     setOemName("");
     setOemSizeMl("350");
     setOemPricePerPack("");
+    setOemProductionRate("");
     setOemFulfillmentType("pickup");
   };
 
@@ -969,6 +975,7 @@ export default function Dashboard() {
     setOemName("");
     setOemSizeMl("350");
     setOemPricePerPack("");
+    setOemProductionRate("");
     setOemFulfillmentType("pickup");
     setShowOemForm(true);
   };
@@ -980,6 +987,7 @@ export default function Dashboard() {
     setOemName(item.name);
     setOemSizeMl(item.sizeMl === "500/600" ? "500" : item.sizeMl || "350");
     setOemPricePerPack(String(item.pricePerPack));
+    setOemProductionRate(String(item.productionRate));
     setOemFulfillmentType(item.fulfillmentType);
     setShowOemForm(true);
   };
@@ -987,12 +995,14 @@ export default function Dashboard() {
   const saveOem = async (event: FormEvent) => {
     event.preventDefault();
     const pricePerPack = Number(oemPricePerPack);
-    if (!oemName.trim() || !Number.isFinite(pricePerPack) || pricePerPack < 0) return;
+    const productionRate = Number(oemProductionRate);
+    if (!oemName.trim() || !Number.isFinite(pricePerPack) || pricePerPack < 0 || !Number.isFinite(productionRate) || productionRate < 0) return;
     const item: OemRecord = {
       id: editingOem?.id ?? crypto.randomUUID(),
       name: oemName.trim(),
       sizeMl: oemSizeMl,
       pricePerPack,
+      productionRate,
       fulfillmentType: oemFulfillmentType,
       updatedAt: new Date().toISOString(),
     };
@@ -2792,6 +2802,21 @@ export default function Dashboard() {
                       setOemPricePerPack(decimalOnly(event.target.value))
                     }
                     placeholder="0.00"
+                    required
+                  />
+                </label>
+                <label>
+                  เรทผลิต
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min="0"
+                    step="1"
+                    value={oemProductionRate}
+                    onChange={(event) =>
+                      setOemProductionRate(digitsOnly(event.target.value))
+                    }
+                    placeholder="0"
                     required
                   />
                 </label>

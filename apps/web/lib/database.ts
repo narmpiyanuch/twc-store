@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase";
 
 export type InventoryRecord = { id: string; category: "bottle" | "cap" | "tank" | "glass"; brand?: string; name: string; detail: string; quantity: number; unit: string; color?: string };
 export type OemFulfillment = "delivery" | "pickup";
-export type OemRecord = { id: string; name: string; sizeMl: string; pricePerPack: number; fulfillmentType: OemFulfillment; updatedAt: string };
+export type OemRecord = { id: string; name: string; sizeMl: string; pricePerPack: number; productionRate: number; fulfillmentType: OemFulfillment; updatedAt: string };
 export type SupplierRecord = { id: string; factoryId: string; sizeMl: number; pricePerBottle: number; bottlesPerPack: number; updatedAt: string };
 export type SupplierFactory = { id: string; name: string; createdAt: string; updatedAt: string };
 export type SupplierLog = { id: string; supplierId: string; factory: string; action: "created" | "updated" | "deleted"; summary: string; createdAt: string };
@@ -31,7 +31,7 @@ const toDatabase = (store: StoreName, value: unknown) => {
   if (store === "oem") {
     const sizeMl = String(item.sizeMl ?? "");
     const legacySize = Number(sizeMl) || 0;
-    return { id: item.id, name: item.name, quantity: legacySize, size_ml: sizeMl || null, price_per_pack: item.pricePerPack, fulfillment_type: item.fulfillmentType, updated_at: item.updatedAt };
+    return { id: item.id, name: item.name, quantity: legacySize, size_ml: sizeMl || null, price_per_pack: item.pricePerPack, production_rate: item.productionRate, fulfillment_type: item.fulfillmentType, updated_at: item.updatedAt };
   }
   if (store === "suppliers") return { id: item.id, factory_id: item.factoryId, size_ml: item.sizeMl, price_per_bottle: item.pricePerBottle, bottles_per_pack: item.bottlesPerPack, updated_at: item.updatedAt };
   if (store === "supplierFactories") return { id: item.id, name: item.name, created_at: item.createdAt, updated_at: item.updatedAt };
@@ -54,7 +54,7 @@ const fromDatabase = (store: StoreName, value: Record<string, unknown>) => {
         : legacySize === 350 || legacySize === 500 || legacySize === 600 || legacySize === 1500
           ? String(legacySize)
           : "";
-    return { id: value.id, name: value.name, sizeMl, pricePerPack: Number(value.price_per_pack ?? 0), fulfillmentType: value.fulfillment_type === "delivery" ? "delivery" : "pickup", updatedAt: value.updated_at };
+    return { id: value.id, name: value.name, sizeMl, pricePerPack: Number(value.price_per_pack ?? 0), productionRate: Number(value.production_rate ?? 0), fulfillmentType: value.fulfillment_type === "delivery" ? "delivery" : "pickup", updatedAt: value.updated_at };
   }
   if (store === "suppliers") return { id: value.id, factoryId: value.factory_id, sizeMl: value.size_ml, pricePerBottle: Number(value.price_per_bottle), bottlesPerPack: value.bottles_per_pack, updatedAt: value.updated_at };
   if (store === "supplierFactories") return { id: value.id, name: value.name, createdAt: value.created_at, updatedAt: value.updated_at };

@@ -15,11 +15,13 @@ create table if not exists public.oem (
   quantity integer not null default 0 check (quantity >= 0),
   size_ml text check (size_ml in ('350','500','600','1500')),
   price_per_pack numeric(12,2) not null default 0 check (price_per_pack >= 0),
+  production_rate integer not null default 0 check (production_rate >= 0),
   fulfillment_type text not null default 'pickup' check (fulfillment_type in ('delivery','pickup')),
   updated_at timestamptz not null default now()
 );
 
 alter table public.oem add column if not exists price_per_pack numeric(12,2) not null default 0 check (price_per_pack >= 0);
+alter table public.oem add column if not exists production_rate integer not null default 0 check (production_rate >= 0);
 alter table public.oem add column if not exists fulfillment_type text not null default 'pickup' check (fulfillment_type in ('delivery','pickup'));
 alter table public.oem add column if not exists size_ml text check (size_ml in ('350','500','600','1500'));
 
